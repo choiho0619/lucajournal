@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>루카저널 — 말씀과 역사, 그리고 오늘의 시선</title>
+<template id="__bundler_thumbnail" data-bg-color="#f3f2f2">
+  <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+    <rect width="120" height="120" fill="#f3f2f2"/>
+    <rect x="56" y="30" width="8" height="60" fill="#854F0B"/>
+    <rect x="36" y="50" width="48" height="8" fill="#854F0B"/>
+  </svg>
+</template>
+<script src="./ds-base.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Brand override: toffee brown accent replaces the system's gold, per brand spec.
+     Ground, text and structural tokens (cream bg, ink text, hairline dividers,
+     spacing/radius/shadow scale) are kept from the Classical system as-is. */
+  --color-accent: #854F0B;
+  --color-accent-2: #854F0B;
+  --color-accent-100: #FBF1E4;
+  --color-accent-200: #F2DFC0;
+  --color-accent-300: #E0BD86;
+  --color-accent-400: #C99A57;
+  --color-accent-500: #A8722C;
+  --color-accent-600: #854F0B;
+  --color-accent-700: #6E4109;
+  --color-accent-800: #573307;
+  --color-accent-900: #2A1804;
+  --color-accent-2-100: #FBF1E4;
+  --color-accent-2-200: #F2DFC0;
+  --color-accent-2-300: #E0BD86;
+  --color-accent-2-400: #C99A57;
+  --color-accent-2-500: #A8722C;
+  --color-accent-2-600: #854F0B;
+  --color-accent-2-700: #6E4109;
+  --color-accent-2-800: #573307;
+  --color-accent-2-900: #2A1804;
+  /* Korean serif stack: Noto Serif KR for Hangul, system serif fallback for Latin/numerals */
+  --font-kr-heading: "Noto Serif KR", var(--font-heading), serif;
+  --font-kr-body: "Noto Serif KR", var(--font-body), serif;
+}
+html{scroll-behavior:smooth;}
+body{margin:0;text-wrap:pretty;font-family:var(--font-kr-body);}
+h1,h2,h3,h4,h5,h6{font-family:var(--font-kr-heading);}
+.wrap{max-width:1120px;margin:0 auto;padding:0 clamp(20px,5vw,64px);}
+.rule{height:1px;border:0;margin:0;background:var(--color-divider);}
+a{color:var(--color-accent-700);text-decoration:none;}
+a:hover{color:var(--color-accent);text-decoration:underline;}
+
+/* — cross mark (simple silhouette, no ornament) — */
+.cross{position:relative;width:20px;height:20px;flex:none;}
+.cross::before,.cross::after{content:"";position:absolute;background:var(--color-accent);}
+.cross::before{left:50%;top:0;width:3px;height:100%;transform:translateX(-50%);}
+.cross::after{top:38%;left:0;width:100%;height:3px;}
+
+/* — masthead / nav — */
+.nav{display:flex;align-items:center;justify-content:space-between;gap:24px;
+  padding:22px clamp(20px,5vw,64px);}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand-name{font-family:var(--font-kr-heading);font-weight:600;font-size:20px;letter-spacing:-.01em;}
+.nav-links{display:flex;gap:28px;align-items:center;list-style:none;margin:0;padding:0;}
+.nav-links a{font-size:14.5px;color:#201f1d;}
+.nav-links a:hover{color:var(--color-accent-700);}
+
+/* — hero shared type — */
+.eyebrow{display:block;font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--color-accent-700);font-weight:600;margin:0 0 14px;}
+.headline{font-weight:600;letter-spacing:-.01em;margin:0;}
+.sub{font-size:16.5px;line-height:1.7;color:color-mix(in srgb, var(--color-text) 76%, transparent);
+  max-width:56ch;margin:16px 0 0;}
+
+/* — three axes cards — */
+.axis-card{border:1px solid var(--color-divider);border-radius:var(--radius-md);padding:28px 26px;
+  background:transparent;}
+.axis-kicker{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent-700);
+  font-weight:600;margin:0 0 10px;}
+.axis-title{font-size:22px;font-weight:600;margin:0 0 10px;}
+.axis-body{font-size:14.5px;line-height:1.7;color:color-mix(in srgb, var(--color-text) 76%, transparent);margin:0;}
+
+/* — recent post list — */
+.post-row{display:flex;align-items:baseline;justify-content:space-between;gap:24px;
+  padding:16px 0;border-bottom:1px solid var(--color-divider);}
+.post-row:first-child{border-top:1px solid var(--color-divider);}
+.post-title{font-size:16px;font-weight:500;}
+.post-tag{font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-accent-700);
+  margin-right:10px;}
+.post-date{font-size:13px;color:color-mix(in srgb, var(--color-text) 55%, transparent);
+  font-feature-settings:"tnum" 1;white-space:nowrap;}
+
+footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
+  color:color-mix(in srgb, var(--color-text) 60%, transparent);
+  display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+</style>
+</head>
+<body>
+
+<!-- 루카저널 랜딩 페이지 -->
+
+<section id="1b">
+  <div>
+    <nav class="nav">
+      <div class="brand"><span class="cross"></span><span class="brand-name">루카저널</span></div>
+      <ul class="nav-links">
+        <li><a href="#1b-daily">묵상</a></li>
+        <li><a href="#1b-perspective">시사</a></li>
+        <li><a href="#1b-heritage">역사</a></li>
+        <li><a href="#1b-about">소개</a></li>
+      </ul>
+      <button type="button" class="btn btn-primary">구독하기</button>
+    </nav>
+    <hr class="rule">
+
+    <div class="wrap">
+      <section style="padding:64px 0 60px;display:grid;grid-template-columns:1.3fr 1fr;gap:48px;align-items:center;">
+        <div>
+          <span class="eyebrow">복음과 시대의 기록</span>
+          <h1 class="headline" style="font-size:clamp(32px,3.6vw,46px);max-width:14ch;">말씀과 역사,<br>그리고 오늘의 시선</h1>
+          <p class="sub">매일의 묵상과 시대의 흐름을 성경적 관점으로 기록합니다.</p>
+          <button type="button" class="btn btn-primary" style="margin-top:26px;padding:11px 24px;font-size:14px;">구독하기</button>
+        </div>
+        <div style="border:1px solid var(--color-divider);border-radius:var(--radius-md);padding:26px 24px;">
+          <p style="font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent-700);font-weight:600;margin:0 0 12px;">오늘의 말씀</p>
+          <p style="font-family:var(--font-kr-heading);font-size:19px;line-height:1.6;margin:0 0 10px;">"여호와는 나의 목자시니 내게 부족함이 없으리로다"</p>
+          <p style="font-size:13px;color:color-mix(in srgb, var(--color-text) 55%, transparent);margin:0;">— 시편 23편 1절</p>
+        </div>
+      </section>
+    </div>
+    <hr class="rule">
+
+    <div class="wrap">
+      <section style="padding:56px 0;">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;">
+          <div class="axis-card" id="1b-daily">
+            <p class="axis-kicker">DAILY</p>
+            <h2 class="axis-title">매일 묵상</h2>
+            <p class="axis-body">하루 한 본문, 오늘을 위한 말씀 묵상과 기도문을 전합니다.</p>
+          </div>
+          <div class="axis-card" id="1b-perspective">
+            <p class="axis-kicker">PERSPECTIVE</p>
+            <h2 class="axis-title">시사 해설</h2>
+            <p class="axis-body">오늘의 이슈를 성경적 세계관으로 짚고 해설합니다.</p>
+          </div>
+          <div class="axis-card" id="1b-heritage">
+            <p class="axis-kicker">HERITAGE</p>
+            <h2 class="axis-title">역사와 간증</h2>
+            <p class="axis-body">건국의 신앙 유산과 믿음의 발자취를 기록합니다.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+    <hr class="rule">
+
+    <div class="wrap">
+      <section style="padding:56px 0 64px;">
+        <h3 style="font-size:15px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent-700);margin:0 0 8px;font-weight:600;">최근 글</h3>
+        <div class="post-row"><div><span class="post-tag">DAILY</span><span class="post-title">오늘의 말씀: 시편 23편, 목자 되신 주</span></div><span class="post-date">2026.07.10</span></div>
+        <div class="post-row"><div><span class="post-tag">PERSPECTIVE</span><span class="post-title">동성혼 법제화 논쟁, 성경적으로 어떻게 볼 것인가</span></div><span class="post-date">2026.07.09</span></div>
+        <div class="post-row"><div><span class="post-tag">HERITAGE</span><span class="post-title">청교도의 신앙과 미국 건국 정신</span></div><span class="post-date">2026.07.08</span></div>
+        <div class="post-row"><div><span class="post-tag">DAILY</span><span class="post-title">잠언 3장에서 배우는 참된 지혜</span></div><span class="post-date">2026.07.07</span></div>
+        <div class="post-row"><div><span class="post-tag">PERSPECTIVE</span><span class="post-title">낙태권 논쟁과 생명 존중의 원칙</span></div><span class="post-date">2026.07.06</span></div>
+        <div class="post-row"><div><span class="post-tag">HERITAGE</span><span class="post-title">종교개혁 500주년, 오늘 우리에게 주는 의미</span></div><span class="post-date">2026.07.05</span></div>
+      </section>
+    </div>
+
+    <footer class="site-footer" id="1b-about">
+      <span>lucajournal.com</span>
+      <span>© 2026 Luca Journal. All rights reserved.</span>
+    </footer>
+  </div>
+</section>
+
+</body>
+</html>
