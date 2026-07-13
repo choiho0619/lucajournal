@@ -71,7 +71,7 @@ a:hover{color:var(--color-accent);text-decoration:underline;}
   color:var(--color-accent-700);font-weight:600;margin:0 0 14px;}
 .headline{font-weight:600;letter-spacing:-.01em;margin:0;}
 .sub{font-size:16.5px;line-height:1.7;color:color-mix(in srgb, var(--color-text) 76%, transparent);
-  max-width:56ch;margin:16px 0 0;}
+  max-width:56ch;margin:16px 0 0;word-break:keep-all;}
 
 /* — three axes cards — */
 .axis-card{border:1px solid var(--color-divider);border-radius:var(--radius-md);padding:28px 26px;
@@ -103,14 +103,16 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 <section id="1b">
   <div>
     <nav class="nav">
-      <div class="brand"><span class="cross"></span><span class="brand-name">루카저널</span></div>
+      <a class="brand" href="index.html" style="text-decoration:none;color:inherit;"><span class="cross"></span><span class="brand-name">루카저널</span></a>
       <ul class="nav-links">
-        <li><a href="#1b-daily">묵상</a></li>
-        <li><a href="#1b-perspective">시사</a></li>
-        <li><a href="#1b-heritage">역사</a></li>
-        <li><a href="#1b-about">소개</a></li>
+        <li><a href="category.html?code=DAILY">묵상</a></li>
+        <li><a href="category.html?code=PERSPECTIVE">시사</a></li>
+        <li><a href="category.html?code=HERITAGE">역사</a></li>
+        <li><a href="category.html?code=APOLOGETICS">변증</a></li>
+        <li><a href="category.html?code=NOTICE">공지</a></li>
+        <li><a href="about.html">소개</a></li>
       </ul>
-      <button type="button" class="btn btn-primary">구독하기</button>
+      <div id="auth-area" style="display:flex;align-items:center;gap:12px;"></div>
     </nav>
     <hr class="rule">
 
@@ -120,7 +122,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
           <span class="eyebrow">복음과 시대의 기록</span>
           <h1 class="headline" style="font-size:clamp(32px,3.6vw,46px);max-width:14ch;">말씀과 역사,<br>그리고 오늘의 시선</h1>
           <p class="sub">매일의 묵상과 시대의 흐름을 성경적 관점으로 기록합니다.</p>
-          <button type="button" class="btn btn-primary" style="margin-top:26px;padding:11px 24px;font-size:14px;">구독하기</button>
+          <div id="subscribe-mount" style="margin-top:26px;max-width:360px;"></div>
         </div>
         <div style="border:1px solid var(--color-divider);border-radius:var(--radius-md);padding:26px 24px;">
           <p style="font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent-700);font-weight:600;margin:0 0 12px;">오늘의 말씀</p>
@@ -133,22 +135,27 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 
     <div class="wrap">
       <section style="padding:56px 0;">
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;">
-          <div class="axis-card" id="1b-daily">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px;">
+          <a class="axis-card" id="1b-daily" href="category.html?code=DAILY" style="display:block;color:inherit;text-decoration:none;">
             <p class="axis-kicker">DAILY</p>
             <h2 class="axis-title">매일 묵상</h2>
             <p class="axis-body">하루 한 본문, 오늘을 위한 말씀 묵상과 기도문을 전합니다.</p>
-          </div>
-          <div class="axis-card" id="1b-perspective">
+          </a>
+          <a class="axis-card" id="1b-perspective" href="category.html?code=PERSPECTIVE" style="display:block;color:inherit;text-decoration:none;">
             <p class="axis-kicker">PERSPECTIVE</p>
             <h2 class="axis-title">시사 해설</h2>
             <p class="axis-body">오늘의 이슈를 성경적 세계관으로 짚고 해설합니다.</p>
-          </div>
-          <div class="axis-card" id="1b-heritage">
+          </a>
+          <a class="axis-card" id="1b-heritage" href="category.html?code=HERITAGE" style="display:block;color:inherit;text-decoration:none;">
             <p class="axis-kicker">HERITAGE</p>
             <h2 class="axis-title">역사와 간증</h2>
             <p class="axis-body">건국의 신앙 유산과 믿음의 발자취를 기록합니다.</p>
-          </div>
+          </a>
+          <a class="axis-card" id="1b-apologetics" href="category.html?code=APOLOGETICS" style="display:block;color:inherit;text-decoration:none;">
+            <p class="axis-kicker">APOLOGETICS</p>
+            <h2 class="axis-title">신앙 변증</h2>
+            <p class="axis-body">반대 논리에 근거를 갖고 답합니다.</p>
+          </a>
         </div>
       </section>
     </div>
@@ -157,21 +164,27 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     <div class="wrap">
       <section style="padding:56px 0 64px;">
         <h3 style="font-size:15px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent-700);margin:0 0 8px;font-weight:600;">최근 글</h3>
-        <div class="post-row"><div><span class="post-tag">DAILY</span><span class="post-title">오늘의 말씀: 시편 23편, 목자 되신 주</span></div><span class="post-date">2026.07.10</span></div>
-        <div class="post-row"><div><span class="post-tag">PERSPECTIVE</span><span class="post-title">동성혼 법제화 논쟁, 성경적으로 어떻게 볼 것인가</span></div><span class="post-date">2026.07.09</span></div>
-        <div class="post-row"><div><span class="post-tag">HERITAGE</span><span class="post-title">청교도의 신앙과 미국 건국 정신</span></div><span class="post-date">2026.07.08</span></div>
-        <div class="post-row"><div><span class="post-tag">DAILY</span><span class="post-title">잠언 3장에서 배우는 참된 지혜</span></div><span class="post-date">2026.07.07</span></div>
-        <div class="post-row"><div><span class="post-tag">PERSPECTIVE</span><span class="post-title">낙태권 논쟁과 생명 존중의 원칙</span></div><span class="post-date">2026.07.06</span></div>
-        <div class="post-row"><div><span class="post-tag">HERITAGE</span><span class="post-title">종교개혁 500주년, 오늘 우리에게 주는 의미</span></div><span class="post-date">2026.07.05</span></div>
+        <div id="recent-posts-list"></div>
       </section>
     </div>
 
     <footer class="site-footer" id="1b-about">
-      <span>lucajournal.com</span>
       <span>© 2026 Luca Journal. All rights reserved.</span>
+    <span style="display:flex;gap:16px;flex-wrap:wrap;"><a href="terms.html">이용약관</a><a href="privacy.html">개인정보처리방침</a></span>
     </footer>
   </div>
 </section>
 
+<script type="module" src="./auth-ui.js"></script>
+<script type="module">
+  import { fetchRecentPosts, renderRecentPosts } from "./posts.js";
+  import { initSubscribeWidget } from "./subscribe.js";
+
+  document.addEventListener("DOMContentLoaded", async () => {
+    const posts = await fetchRecentPosts();
+    renderRecentPosts(posts);
+    initSubscribeWidget("subscribe-mount");
+  });
+</script>
 </body>
 </html>

@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>루카저널 — 말씀과 역사, 그리고 오늘의 시선</title>
+<template id="__bundler_thumbnail" data-bg-color="#f3f2f2">
+  <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+    <rect width="120" height="120" fill="#f3f2f2"/>
+    <rect x="56" y="30" width="8" height="60" fill="#854F0B"/>
+    <rect x="36" y="50" width="48" height="8" fill="#854F0B"/>
+  </svg>
+</template>
+<script src="./ds-base.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Brand override: toffee brown accent replaces the system's gold, per brand spec.
+     Ground, text and structural tokens (cream bg, ink text, hairline dividers,
+     spacing/radius/shadow scale) are kept from the Classical system as-is. */
+  --color-accent: #854F0B;
+  --color-accent-2: #854F0B;
+  --color-accent-100: #FBF1E4;
+  --color-accent-200: #F2DFC0;
+  --color-accent-300: #E0BD86;
+  --color-accent-400: #C99A57;
+  --color-accent-500: #A8722C;
+  --color-accent-600: #854F0B;
+  --color-accent-700: #6E4109;
+  --color-accent-800: #573307;
+  --color-accent-900: #2A1804;
+  --color-accent-2-100: #FBF1E4;
+  --color-accent-2-200: #F2DFC0;
+  --color-accent-2-300: #E0BD86;
+  --color-accent-2-400: #C99A57;
+  --color-accent-2-500: #A8722C;
+  --color-accent-2-600: #854F0B;
+  --color-accent-2-700: #6E4109;
+  --color-accent-2-800: #573307;
+  --color-accent-2-900: #2A1804;
+  /* Korean serif stack: Noto Serif KR for Hangul, system serif fallback for Latin/numerals */
+  --font-kr-heading: "Noto Serif KR", var(--font-heading), serif;
+  --font-kr-body: "Noto Serif KR", var(--font-body), serif;
+}
+html{scroll-behavior:smooth;}
+body{margin:0;text-wrap:pretty;font-family:var(--font-kr-body);}
+h1,h2,h3,h4,h5,h6{font-family:var(--font-kr-heading);}
+.wrap{max-width:1120px;margin:0 auto;padding:0 clamp(20px,5vw,64px);}
+.rule{height:1px;border:0;margin:0;background:var(--color-divider);}
+a{color:var(--color-accent-700);text-decoration:none;}
+a:hover{color:var(--color-accent);text-decoration:underline;}
+
+/* — cross mark (simple silhouette, no ornament) — */
+.cross{position:relative;width:20px;height:20px;flex:none;}
+.cross::before,.cross::after{content:"";position:absolute;background:var(--color-accent);}
+.cross::before{left:50%;top:0;width:3px;height:100%;transform:translateX(-50%);}
+.cross::after{top:38%;left:0;width:100%;height:3px;}
+
+/* — masthead / nav — */
+.nav{display:flex;align-items:center;justify-content:space-between;gap:24px;
+  padding:22px clamp(20px,5vw,64px);}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand-name{font-family:var(--font-kr-heading);font-weight:600;font-size:20px;letter-spacing:-.01em;}
+.nav-links{display:flex;gap:28px;align-items:center;list-style:none;margin:0;padding:0;}
+.nav-links a{font-size:14.5px;color:#201f1d;}
+.nav-links a:hover{color:var(--color-accent-700);}
+
+/* — hero shared type — */
+.eyebrow{display:block;font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--color-accent-700);font-weight:600;margin:0 0 14px;}
+.headline{font-weight:600;letter-spacing:-.01em;margin:0;}
+.sub{font-size:16.5px;line-height:1.7;color:color-mix(in srgb, var(--color-text) 76%, transparent);
+  max-width:56ch;margin:16px 0 0;}
+
+/* — write form — */
+.field{margin:0 0 20px;}
+.field label{display:block;font-size:13px;font-weight:600;color:var(--color-accent-700);margin:0 0 8px;}
+.field select,.field input,.field textarea{width:100%;box-sizing:border-box;font-family:inherit;font-size:15px;
+  padding:10px 12px;border:1px solid var(--color-divider);border-radius:var(--radius-md);background:transparent;color:inherit;}
+.field textarea{min-height:280px;line-height:1.7;resize:vertical;}
+.form-actions{display:flex;gap:12px;margin-top:8px;}
+.form-message{font-size:14px;margin:16px 0 0;}
+
+footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
+  color:color-mix(in srgb, var(--color-text) 60%, transparent);
+  display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+</style>
+</head>
+<body>
+
+<div>
+  <nav class="nav">
+    <a class="brand" href="index.html" style="text-decoration:none;color:inherit;"><span class="cross"></span><span class="brand-name">루카저널</span></a>
+    <ul class="nav-links">
+      <li><a href="category.html?code=DAILY">묵상</a></li>
+      <li><a href="category.html?code=PERSPECTIVE">시사</a></li>
+      <li><a href="category.html?code=HERITAGE">역사</a></li>
+      <li><a href="category.html?code=APOLOGETICS">변증</a></li>
+      <li><a href="category.html?code=NOTICE">공지</a></li>
+      <li><a href="about.html">소개</a></li>
+    </ul>
+    <div id="auth-area" style="display:flex;align-items:center;gap:12px;"></div>
+  </nav>
+  <hr class="rule">
+
+  <div class="wrap">
+    <section style="padding:56px 0 64px;max-width:800px;margin:0 auto;">
+      <span class="eyebrow">글쓰기</span>
+      <h1 class="headline" style="font-size:clamp(26px,3vw,34px);margin:0 0 8px;">새 글 작성</h1>
+
+      <div id="gate-login" hidden>
+        <p class="sub">로그인이 필요합니다</p>
+        <button type="button" id="gate-login-btn" class="btn btn-primary" style="margin-top:16px;">로그인</button>
+      </div>
+
+      <div id="gate-no-permission" hidden>
+        <p class="sub">글쓰기 권한이 없습니다</p>
+      </div>
+
+      <form id="write-form" hidden>
+        <div class="field">
+          <label for="post-category">카테고리</label>
+          <select id="post-category" required></select>
+        </div>
+        <div class="field">
+          <label for="post-title">제목</label>
+          <input id="post-title" type="text" required />
+        </div>
+        <div class="field">
+          <label for="post-content">본문</label>
+          <textarea id="post-content" required></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="button" id="save-draft-btn" class="btn btn-secondary">임시저장</button>
+          <button type="button" id="publish-btn" class="btn btn-primary">발행하기</button>
+          <button type="button" id="cancel-btn" class="btn btn-secondary">취소하기</button>
+        </div>
+        <p id="form-message" class="form-message" hidden></p>
+      </form>
+    </section>
+  </div>
+
+  <footer class="site-footer">
+    <span>© 2026 Luca Journal. All rights reserved.</span>
+    <span style="display:flex;gap:16px;flex-wrap:wrap;"><a href="terms.html">이용약관</a><a href="privacy.html">개인정보처리방침</a></span>
+  </footer>
+</div>
+
+<script type="module" src="./auth-ui.js"></script>
+<script type="module">
+  import { signInWithGoogle } from "./auth.js";
+  import { fetchMyRole, fetchActiveCategories, createPost } from "./posts.js";
+
+  const gateLogin = document.getElementById("gate-login");
+  const gateNoPermission = document.getElementById("gate-no-permission");
+  const writeForm = document.getElementById("write-form");
+  const categorySelect = document.getElementById("post-category");
+  const titleInput = document.getElementById("post-title");
+  const contentTextarea = document.getElementById("post-content");
+  const formMessage = document.getElementById("form-message");
+
+  document.getElementById("gate-login-btn").addEventListener("click", () => signInWithGoogle());
+
+  function showMessage(text, isError) {
+    formMessage.textContent = text;
+    formMessage.style.color = isError ? "#b3261e" : "";
+    formMessage.hidden = false;
+  }
+
+  async function populateCategories() {
+    const categories = await fetchActiveCategories();
+    for (const category of categories) {
+      const option = document.createElement("option");
+      option.value = category.id;
+      option.dataset.code = category.code;
+      option.textContent = category.name;
+      categorySelect.appendChild(option);
+    }
+  }
+
+  async function submit(status) {
+    formMessage.hidden = true;
+    const result = await createPost({
+      categoryId: categorySelect.value,
+      title: titleInput.value,
+      content: contentTextarea.value,
+      status,
+    });
+
+    if (result.error) {
+      showMessage(result.error, true);
+      return;
+    }
+
+    if (status === "published") {
+      showMessage("저장되었습니다");
+      window.location.href = `post.html?slug=${encodeURIComponent(result.data.slug)}`;
+      return;
+    }
+
+    showMessage("저장되었습니다");
+  }
+
+  document.getElementById("save-draft-btn").addEventListener("click", () => submit("draft"));
+  document.getElementById("publish-btn").addEventListener("click", () => submit("published"));
+  document.getElementById("cancel-btn").addEventListener("click", () => {
+    const code = categorySelect.selectedOptions[0]?.dataset.code;
+    window.location.href = code ? `category.html?code=${encodeURIComponent(code)}` : "index.html";
+  });
+
+  // 클라이언트 측 role 체크는 UX 안내용일 뿐이며, 실제 접근 제어는 DB의 RLS 정책이 담당한다.
+  document.addEventListener("DOMContentLoaded", async () => {
+    const role = await fetchMyRole();
+
+    if (role === null) {
+      gateLogin.hidden = false;
+      return;
+    }
+    if (role === "writer" || role === "admin") {
+      writeForm.hidden = false;
+      await populateCategories();
+      return;
+    }
+    gateNoPermission.hidden = false;
+  });
+</script>
+</body>
+</html>

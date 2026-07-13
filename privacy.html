@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>루카저널 — 말씀과 역사, 그리고 오늘의 시선</title>
+<template id="__bundler_thumbnail" data-bg-color="#f3f2f2">
+  <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+    <rect width="120" height="120" fill="#f3f2f2"/>
+    <rect x="56" y="30" width="8" height="60" fill="#854F0B"/>
+    <rect x="36" y="50" width="48" height="8" fill="#854F0B"/>
+  </svg>
+</template>
+<script src="./ds-base.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Brand override: toffee brown accent replaces the system's gold, per brand spec.
+     Ground, text and structural tokens (cream bg, ink text, hairline dividers,
+     spacing/radius/shadow scale) are kept from the Classical system as-is. */
+  --color-accent: #854F0B;
+  --color-accent-2: #854F0B;
+  --color-accent-100: #FBF1E4;
+  --color-accent-200: #F2DFC0;
+  --color-accent-300: #E0BD86;
+  --color-accent-400: #C99A57;
+  --color-accent-500: #A8722C;
+  --color-accent-600: #854F0B;
+  --color-accent-700: #6E4109;
+  --color-accent-800: #573307;
+  --color-accent-900: #2A1804;
+  --color-accent-2-100: #FBF1E4;
+  --color-accent-2-200: #F2DFC0;
+  --color-accent-2-300: #E0BD86;
+  --color-accent-2-400: #C99A57;
+  --color-accent-2-500: #A8722C;
+  --color-accent-2-600: #854F0B;
+  --color-accent-2-700: #6E4109;
+  --color-accent-2-800: #573307;
+  --color-accent-2-900: #2A1804;
+  /* Korean serif stack: Noto Serif KR for Hangul, system serif fallback for Latin/numerals */
+  --font-kr-heading: "Noto Serif KR", var(--font-heading), serif;
+  --font-kr-body: "Noto Serif KR", var(--font-body), serif;
+}
+html{scroll-behavior:smooth;}
+body{margin:0;text-wrap:pretty;font-family:var(--font-kr-body);}
+h1,h2,h3,h4,h5,h6{font-family:var(--font-kr-heading);}
+.wrap{max-width:1120px;margin:0 auto;padding:0 clamp(20px,5vw,64px);}
+.rule{height:1px;border:0;margin:0;background:var(--color-divider);}
+a{color:var(--color-accent-700);text-decoration:none;}
+a:hover{color:var(--color-accent);text-decoration:underline;}
+
+/* — cross mark (simple silhouette, no ornament) — */
+.cross{position:relative;width:20px;height:20px;flex:none;}
+.cross::before,.cross::after{content:"";position:absolute;background:var(--color-accent);}
+.cross::before{left:50%;top:0;width:3px;height:100%;transform:translateX(-50%);}
+.cross::after{top:38%;left:0;width:100%;height:3px;}
+
+/* — masthead / nav — */
+.nav{display:flex;align-items:center;justify-content:space-between;gap:24px;
+  padding:22px clamp(20px,5vw,64px);}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand-name{font-family:var(--font-kr-heading);font-weight:600;font-size:20px;letter-spacing:-.01em;}
+.nav-links{display:flex;gap:28px;align-items:center;list-style:none;margin:0;padding:0;}
+.nav-links a{font-size:14.5px;color:#201f1d;}
+.nav-links a:hover{color:var(--color-accent-700);}
+
+/* — hero shared type — */
+.eyebrow{display:block;font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--color-accent-700);font-weight:600;margin:0 0 14px;}
+.headline{font-weight:600;letter-spacing:-.01em;margin:0;}
+.sub{font-size:16.5px;line-height:1.7;color:color-mix(in srgb, var(--color-text) 76%, transparent);
+  max-width:56ch;margin:16px 0 0;word-break:keep-all;}
+
+footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
+  color:color-mix(in srgb, var(--color-text) 60%, transparent);
+  display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+</style>
+</head>
+<body>
+
+<div>
+  <nav class="nav">
+    <a class="brand" href="index.html" style="text-decoration:none;color:inherit;"><span class="cross"></span><span class="brand-name">루카저널</span></a>
+    <ul class="nav-links">
+      <li><a href="category.html?code=DAILY">묵상</a></li>
+      <li><a href="category.html?code=PERSPECTIVE">시사</a></li>
+      <li><a href="category.html?code=HERITAGE">역사</a></li>
+      <li><a href="category.html?code=APOLOGETICS">변증</a></li>
+      <li><a href="category.html?code=NOTICE">공지</a></li>
+      <li><a href="about.html">소개</a></li>
+    </ul>
+    <div id="auth-area" style="display:flex;align-items:center;gap:12px;"></div>
+  </nav>
+  <hr class="rule">
+
+  <div class="wrap">
+    <section style="padding:56px 0 64px;max-width:72ch;">
+      <h1 class="headline" style="font-size:clamp(28px,3.2vw,40px);margin:0 0 8px;">개인정보처리방침</h1>
+      <p class="sub" style="font-size:13px;color:color-mix(in srgb, var(--color-text) 55%, transparent);margin:0 0 32px;">최종 업데이트: 2026년 7월 13일</p>
+
+      <h2 style="font-size:19px;margin:0 0 10px;">1. 수집하는 개인정보</h2>
+      <p class="sub" style="margin:0 0 10px;">루카저널은 서비스 이용 과정에서 아래와 같은 정보를 수집할 수 있습니다.</p>
+      <ul style="margin:0 0 28px;padding-left:20px;">
+        <li class="sub" style="margin:0 0 8px;">자동 수집 정보: IP 주소, 브라우저 종류, 방문 페이지, 접속 일시, 쿠키</li>
+        <li class="sub" style="margin:0 0 8px;">로그인 이용자: Google 계정 이메일 주소, 표시 이름</li>
+        <li class="sub" style="margin:0;">구독 신청자: 이메일 주소</li>
+      </ul>
+
+      <h2 style="font-size:19px;margin:0 0 10px;">2. 쿠키(Cookie) 사용</h2>
+      <p class="sub" style="margin:0 0 28px;">본 사이트는 서비스 운영 및 광고 게재를 위해 쿠키를 사용합니다. 쿠키는 이용자의 브라우저에 저장되는 작은 텍스트 파일이며, 브라우저 설정에서 언제든지 삭제하거나 거부할 수 있습니다. 단, 쿠키를 비활성화하면 일부 서비스 이용이 제한될 수 있습니다.</p>
+
+      <h2 style="font-size:19px;margin:0 0 10px;">3. 제3자 광고 및 쿠키</h2>
+      <p class="sub" style="margin:0 0 10px;">본 사이트는 Google AdSense를 포함한 제3자 광고 서비스를 이용합니다. Google 등 제3자 광고 공급업체는 쿠키를 사용하여 이용자의 이전 방문 기록을 기반으로 맞춤형 광고를 게재할 수 있습니다.</p>
+      <ul style="margin:0 0 28px;padding-left:20px;">
+        <li class="sub" style="margin:0 0 8px;">Google의 광고 쿠키 사용은 <a href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener">Google 광고 정책(https://policies.google.com/technologies/ads)</a>에 따릅니다.</li>
+        <li class="sub" style="margin:0;">이용자는 <a href="https://www.aboutads.info/choices/" target="_blank" rel="noopener">관심 기반 광고 opt-out 페이지(https://www.aboutads.info/choices/)</a>에서 맞춤형 광고를 거부할 수 있습니다.</li>
+      </ul>
+
+      <h2 style="font-size:19px;margin:0 0 10px;">4. 개인정보의 이용 목적</h2>
+      <ul style="margin:0 0 28px;padding-left:20px;">
+        <li class="sub" style="margin:0 0 8px;">서비스 운영 및 이용자 통계 분석</li>
+        <li class="sub" style="margin:0 0 8px;">회원 등급 관리 및 콘텐츠 작성·댓글 기능 제공</li>
+        <li class="sub" style="margin:0 0 8px;">구독 신청자에게 발행 콘텐츠 이메일 발송</li>
+        <li class="sub" style="margin:0 0 8px;">광고 게재 및 광고 성과 측정</li>
+        <li class="sub" style="margin:0;">보안 및 부정 이용 방지</li>
+      </ul>
+
+      <h2 style="font-size:19px;margin:0 0 10px;">5. 개인정보의 보유 및 파기</h2>
+      <p class="sub" style="margin:0 0 28px;">수집된 개인정보는 이용 목적 달성 후 지체 없이 파기합니다. 단, 관련 법령에 의해 보존이 필요한 경우에는 해당 기간 동안 보관합니다.</p>
+
+      <h2 style="font-size:19px;margin:0 0 10px;">6. 개인정보 보호책임자 및 문의</h2>
+      <p class="sub" style="margin:0 0 4px;">개인정보 처리에 관한 문의는 아래로 연락주세요.</p>
+      <p class="sub" style="margin:0;">이메일: <a href="mailto:yaho0619@naver.com">yaho0619@naver.com</a></p>
+    </section>
+  </div>
+
+  <footer class="site-footer">
+    <span>© 2026 Luca Journal. All rights reserved.</span>
+    <span style="display:flex;gap:16px;flex-wrap:wrap;"><a href="terms.html">이용약관</a><a href="privacy.html">개인정보처리방침</a></span>
+  </footer>
+</div>
+
+<script type="module" src="./auth-ui.js"></script>
+</body>
+</html>
