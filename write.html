@@ -11,6 +11,7 @@
     <rect x="36" y="50" width="48" height="8" fill="#854F0B"/>
   </svg>
 </template>
+<link rel="stylesheet" href="_ds/classical-8f6f9324-18f5-4c72-8750-50f577e7d92e/styles.css">
 <script src="./ds-base.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -106,8 +107,8 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 
   <div class="wrap">
     <section style="padding:56px 0 64px;max-width:800px;margin:0 auto;">
-      <span class="eyebrow">글쓰기</span>
-      <h1 class="headline" style="font-size:clamp(26px,3vw,34px);margin:0 0 8px;">새 글 작성</h1>
+      <span class="eyebrow" id="write-eyebrow">글쓰기</span>
+      <h1 class="headline" style="font-size:clamp(26px,3vw,34px);margin:0 0 8px;" id="write-heading">새 글 작성</h1>
 
       <div id="gate-login" hidden>
         <p class="sub">로그인이 필요합니다</p>
@@ -149,8 +150,8 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 
 <script type="module" src="./auth-ui.js"></script>
 <script type="module">
-  import { signInWithGoogle } from "./auth.js";
-  import { fetchMyRole, fetchActiveCategories, createPost } from "./posts.js";
+  import { supabase, signInWithGoogle } from "./auth.js";
+  import { fetchMyRole, fetchActiveCategories, createPost, fetchPostById, updatePost } from "./posts.js";
 
   const gateLogin = document.getElementById("gate-login");
   const gateNoPermission = document.getElementById("gate-no-permission");
@@ -159,6 +160,13 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
   const titleInput = document.getElementById("post-title");
   const contentTextarea = document.getElementById("post-content");
   const formMessage = document.getElementById("form-message");
+  const eyebrowEl = document.getElementById("write-eyebrow");
+  const headingEl = document.getElementById("write-heading");
+  const saveDraftBtn = document.getElementById("save-draft-btn");
+  const publishBtn = document.getElementById("publish-btn");
+  const initialCode = new URLSearchParams(window.location.search).get("code");
+  const editId = new URLSearchParams(window.location.search).get("edit");
+  let editCode = null;
 
   document.getElementById("gate-login-btn").addEventListener("click", () => signInWithGoogle());
 
@@ -177,36 +185,78 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
       option.textContent = category.name;
       categorySelect.appendChild(option);
     }
+    if (initialCode) {
+      const match = Array.from(categorySelect.options).find((opt) => opt.dataset.code === initialCode);
+      if (match) categorySelect.value = match.value;
+    }
   }
 
   async function submit(status) {
     formMessage.hidden = true;
-    const result = await createPost({
-      categoryId: categorySelect.value,
-      title: titleInput.value,
-      content: contentTextarea.value,
-      status,
-    });
+    const result = editId
+      ? await updatePost({
+          id: editId,
+          categoryId: categorySelect.value,
+          title: titleInput.value,
+          content: contentTextarea.value,
+        })
+      : await createPost({
+          categoryId: categorySelect.value,
+          title: titleInput.value,
+          content: contentTextarea.value,
+          status,
+        });
 
     if (result.error) {
       showMessage(result.error, true);
       return;
     }
 
-    if (status === "published") {
+    if (editId || status === "published") {
       showMessage("저장되었습니다");
-      window.location.href = `post.html?slug=${encodeURIComponent(result.data.slug)}`;
+      const code = editCode || initialCode || "DAILY";
+      window.location.href = `category.html?code=${encodeURIComponent(code)}`;
       return;
     }
 
     showMessage("저장되었습니다");
   }
 
+  async function loadPostForEdit() {
+    const post = await fetchPostById(editId);
+    if (!post) {
+      writeForm.hidden = true;
+      gateNoPermission.querySelector("p").textContent = "글을 찾을 수 없습니다";
+      gateNoPermission.hidden = false;
+      return;
+    }
+
+    // 클라이언트 측 권한 체크는 UX 안내용일 뿐이며, 실제 접근 제어는 DB의 RLS 정책(posts_update_own 등)이 담당한다.
+    const { data: { user } } = await supabase.auth.getUser();
+    const myRole = await fetchMyRole();
+    const canEdit = !!user && (user.id === post.author_id || myRole === "admin");
+    if (!canEdit) {
+      writeForm.hidden = true;
+      gateNoPermission.hidden = false;
+      return;
+    }
+
+    editCode = post.categories?.code || null;
+    titleInput.value = post.title;
+    contentTextarea.value = post.content;
+    categorySelect.value = String(post.category_id);
+
+    eyebrowEl.textContent = "글 수정";
+    headingEl.textContent = "글 수정";
+    saveDraftBtn.hidden = true;
+    publishBtn.textContent = "수정 저장";
+  }
+
   document.getElementById("save-draft-btn").addEventListener("click", () => submit("draft"));
   document.getElementById("publish-btn").addEventListener("click", () => submit("published"));
   document.getElementById("cancel-btn").addEventListener("click", () => {
-    const code = categorySelect.selectedOptions[0]?.dataset.code;
-    window.location.href = code ? `category.html?code=${encodeURIComponent(code)}` : "index.html";
+    const code = editCode || initialCode || "DAILY";
+    window.location.href = `category.html?code=${encodeURIComponent(code)}`;
   });
 
   // 클라이언트 측 role 체크는 UX 안내용일 뿐이며, 실제 접근 제어는 DB의 RLS 정책이 담당한다.
@@ -220,6 +270,9 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     if (role === "writer" || role === "admin") {
       writeForm.hidden = false;
       await populateCategories();
+      if (editId) {
+        await loadPostForEdit();
+      }
       return;
     }
     gateNoPermission.hidden = false;

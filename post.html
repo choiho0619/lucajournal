@@ -11,6 +11,7 @@
     <rect x="36" y="50" width="48" height="8" fill="#854F0B"/>
   </svg>
 </template>
+<link rel="stylesheet" href="_ds/classical-8f6f9324-18f5-4c72-8750-50f577e7d92e/styles.css">
 <script src="./ds-base.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -77,6 +78,14 @@ a:hover{color:var(--color-accent);text-decoration:underline;}
 .post-body p{font-size:16px;line-height:1.85;margin:0 0 20px;
   color:color-mix(in srgb, var(--color-text) 88%, transparent);}
 
+/* — post detail article container: centered, capped width — */
+.post-article{max-width:900px;margin:0 auto;padding:56px 0 64px;}
+
+/* #back-to-list carries the .btn class (display:inline-flex from the design system),
+   which would win the cascade over the bare [hidden] UA rule if hidden is ever toggled
+   on that element directly rather than its wrapper — force it explicitly here. */
+[hidden]{display:none !important;}
+
 footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
   color:color-mix(in srgb, var(--color-text) 60%, transparent);
   display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;}
@@ -100,9 +109,9 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
   <hr class="rule">
 
   <div class="wrap">
-    <article style="padding:56px 0 64px;max-width:72ch;">
-      <div id="post-content"></div>
-      <p style="margin-top:40px;"><a href="index.html" class="btn btn-secondary" id="back-to-list">목록으로</a></p>
+    <article class="post-article">
+      <div id="post-content"><p class="sub" id="post-loading">불러오는 중입니다…</p></div>
+      <p style="margin-top:40px;" id="back-to-list-para" hidden><a href="index.html" class="btn btn-secondary" id="back-to-list">목록으로</a></p>
     </article>
   </div>
 
@@ -114,7 +123,8 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 
 <script type="module" src="./auth-ui.js"></script>
 <script type="module">
-  import { fetchPostBySlug, formatDate } from "./posts.js";
+  import { supabase } from "./auth.js";
+  import { fetchPostBySlug, formatDate, fetchMyRole } from "./posts.js";
 
   function renderNotFound(container) {
     container.innerHTML = "";
@@ -159,25 +169,47 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 
   document.addEventListener("DOMContentLoaded", async () => {
     const container = document.getElementById("post-content");
+    const backToListPara = document.getElementById("back-to-list-para");
     const slug = new URLSearchParams(window.location.search).get("slug");
 
     if (!slug) {
       renderNotFound(container);
+      backToListPara.hidden = false;
       return;
     }
 
-    const post = await fetchPostBySlug(slug);
+    const [post, { data: { user } }, role] = await Promise.all([
+      fetchPostBySlug(slug),
+      supabase.auth.getUser(),
+      fetchMyRole(),
+    ]);
+
     if (!post) {
       renderNotFound(container);
+      backToListPara.hidden = false;
       return;
     }
 
     renderPost(container, post);
 
+    const backToList = document.getElementById("back-to-list");
     if (post.categories?.code) {
-      document.getElementById("back-to-list").href =
-        `category.html?code=${encodeURIComponent(post.categories.code)}`;
+      backToList.href = `category.html?code=${encodeURIComponent(post.categories.code)}`;
     }
+
+    // 클라이언트 측 권한 체크는 UX 안내용일 뿐이며, 실제 접근 제어는 DB의 RLS 정책(posts_update_own 등)이 담당한다.
+    const canEdit = !!user && (user.id === post.author_id || role === "admin");
+    if (canEdit) {
+      const editLink = document.createElement("a");
+      editLink.className = "btn btn-secondary";
+      editLink.id = "edit-post-btn";
+      editLink.style.marginLeft = "12px";
+      editLink.href = `write.html?edit=${encodeURIComponent(post.id)}`;
+      editLink.textContent = "수정";
+      backToList.after(editLink);
+    }
+
+    backToListPara.hidden = false;
   });
 </script>
 </body>

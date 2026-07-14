@@ -11,6 +11,7 @@
     <rect x="36" y="50" width="48" height="8" fill="#854F0B"/>
   </svg>
 </template>
+<link rel="stylesheet" href="_ds/classical-8f6f9324-18f5-4c72-8750-50f577e7d92e/styles.css">
 <script src="./ds-base.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -195,7 +196,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     if (role === "writer" || role === "admin") {
       const writeLink = document.createElement("a");
       writeLink.className = "btn btn-secondary";
-      writeLink.href = `write.html?category=${encodeURIComponent(code)}`;
+      writeLink.href = `write.html?code=${encodeURIComponent(code)}`;
       writeLink.textContent = "글쓰기";
       document.getElementById("category-write-link").appendChild(writeLink);
     }

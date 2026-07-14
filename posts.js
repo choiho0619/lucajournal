@@ -68,9 +68,22 @@ export function renderRecentPosts(posts, containerId = "recent-posts-list", empt
 export async function fetchPostBySlug(slug) {
   const { data, error } = await supabase
     .from("posts")
-    .select("slug, title, content, published_at, categories(name, code), profiles(display_name)")
+    .select("id, author_id, slug, title, content, published_at, categories(name, code), profiles(display_name)")
     .eq("slug", slug)
     .eq("status", "published")
+    .single();
+
+  if (error) {
+    return null;
+  }
+  return data;
+}
+
+export async function fetchPostById(id) {
+  const { data, error } = await supabase
+    .from("posts")
+    .select("id, author_id, category_id, title, content, status, categories(code)")
+    .eq("id", id)
     .single();
 
   if (error) {
@@ -159,6 +172,29 @@ export async function createPost({ categoryId, title, content, status }) {
       status,
       published_at: status === "published" ? new Date().toISOString() : null,
     })
+    .select()
+    .single();
+
+  if (error) {
+    return { error: error.message };
+  }
+  return { data };
+}
+
+export async function updatePost({ id, categoryId, title, content }) {
+  if (!title?.trim() || !content?.trim()) {
+    return { error: "제목과 본문을 입력해주세요" };
+  }
+
+  const { data, error } = await supabase
+    .from("posts")
+    .update({
+      category_id: categoryId,
+      title,
+      content,
+      excerpt: content.slice(0, 80),
+    })
+    .eq("id", id)
     .select()
     .single();
 
