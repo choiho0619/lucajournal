@@ -11,10 +11,13 @@
     <rect x="36" y="50" width="48" height="8" fill="#854F0B"/>
   </svg>
 </template>
+<style>html{background:#f3f2f2;}</style>
 <link rel="stylesheet" href="_ds/classical-8f6f9324-18f5-4c72-8750-50f577e7d92e/styles.css">
 <script src="./ds-base.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Lora:wght@400;600&display=swap">
 <style>
 :root{
   /* Brand override: toffee brown accent replaces the system's gold, per brand spec.
@@ -44,8 +47,21 @@
   --font-kr-heading: "Noto Serif KR", var(--font-heading), serif;
   --font-kr-body: "Noto Serif KR", var(--font-body), serif;
 }
+/* View Transitions API: 크로스 도큐먼트 전환. 미지원 브라우저에서는 조용히 무시되는 progressive enhancement */
+@view-transition {
+  navigation: auto;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.18s;
+}
 html{scroll-behavior:smooth;}
-body{margin:0;text-wrap:pretty;font-family:var(--font-kr-body);}
+body{margin:0;text-wrap:pretty;font-family:var(--font-kr-body);display:flex;flex-direction:column;min-height:100vh;}
+/* footer 위치 고정: body 직속 wrapper(div 또는 index.html의 section)를 flex column으로 늘리고,
+   footer는 margin-top:auto로 항상 맨 아래에 붙인다 */
+body > div,body > section{flex:1;display:flex;flex-direction:column;}
+body > section > div{flex:1;display:flex;flex-direction:column;}
+.page-main{flex:1;}
 h1,h2,h3,h4,h5,h6{font-family:var(--font-kr-heading);}
 .wrap{max-width:1120px;margin:0 auto;padding:0 clamp(20px,5vw,64px);}
 .rule{height:1px;border:0;margin:0;background:var(--color-divider);}
@@ -84,9 +100,19 @@ a:hover{color:var(--color-accent);text-decoration:underline;}
 .post-date{font-size:13px;color:color-mix(in srgb, var(--color-text) 55%, transparent);
   font-feature-settings:"tnum" 1;white-space:nowrap;}
 
+/* — loading skeleton — */
+@keyframes skeleton-pulse{0%,100%{opacity:1;}50%{opacity:.55;}}
+.skeleton{background:var(--color-neutral-200, #e8e4dd);border-radius:var(--radius-md, 6px);
+  animation:skeleton-pulse 1.4s ease-in-out infinite;}
+.skeleton-row{display:flex;align-items:baseline;justify-content:space-between;gap:24px;
+  padding:16px 0;border-bottom:1px solid var(--color-divider);}
+.skeleton-row:first-child{border-top:1px solid var(--color-divider);}
+.skeleton-row-title{height:16px;width:60%;}
+.skeleton-row-date{height:13px;width:70px;flex:none;}
+
 footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
   color:color-mix(in srgb, var(--color-text) 60%, transparent);
-  display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+  display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:auto;}
 </style>
 </head>
 <body>
@@ -102,9 +128,10 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
       <li><a href="category.html?code=NOTICE">공지</a></li>
       <li><a href="about.html">소개</a></li>
     </ul>
-    <div id="auth-area" style="display:flex;align-items:center;gap:12px;"></div>
+    <div id="auth-area" style="display:flex;align-items:center;gap:12px;min-width:140px;"></div>
   </nav>
-  <hr class="rule">
+  <main class="page-main">
+<hr class="rule">
 
   <div class="wrap">
     <section id="category-header" style="padding:56px 0 20px;max-width:72ch;">
@@ -118,11 +145,16 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
   <div class="wrap">
     <section id="category-list-section" style="padding:40px 0 64px;">
       <p id="category-count" class="post-date" style="margin:0 0 12px;" hidden></p>
-      <div id="category-posts-list"></div>
+      <div id="category-posts-list">
+        <div class="skeleton-row"><div class="skeleton skeleton-row-title"></div><div class="skeleton skeleton-row-date"></div></div>
+        <div class="skeleton-row"><div class="skeleton skeleton-row-title"></div><div class="skeleton skeleton-row-date"></div></div>
+        <div class="skeleton-row"><div class="skeleton skeleton-row-title"></div><div class="skeleton skeleton-row-date"></div></div>
+      </div>
       <div id="category-write-link" style="display:flex;justify-content:flex-end;margin-top:20px;"></div>
       <p id="category-others" class="post-date" style="margin:32px 0 0;" hidden></p>
     </section>
   </div>
+  </main>
 
   <footer class="site-footer">
     <span>© 2026 Luca Journal. All rights reserved.</span>
