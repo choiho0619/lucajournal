@@ -115,6 +115,29 @@ a:hover{color:var(--color-accent);text-decoration:underline;}
 /* — post detail article container: centered, capped width — */
 .post-article{max-width:900px;margin:0 auto;padding:56px 0 64px;}
 
+/* — comments — */
+.comments-section{max-width:900px;margin:0 auto;padding:0 0 64px;}
+.comments-heading{font-size:20px;font-weight:600;margin:0 0 24px;}
+.comment-item{padding:20px 0;border-bottom:1px solid var(--color-divider);}
+.comment-item:first-child{padding-top:0;}
+.comment-item-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:0 0 8px;}
+.comment-author{font-size:14px;font-weight:600;}
+.comment-date{font-size:12.5px;color:color-mix(in srgb, var(--color-text) 55%, transparent);}
+.comment-body{font-size:15px;line-height:1.75;white-space:pre-wrap;word-break:break-word;margin:0;
+  color:color-mix(in srgb, var(--color-text) 88%, transparent);}
+.comment-delete-btn{background:none;border:0;padding:0;margin-top:8px;font-size:12.5px;cursor:pointer;
+  text-decoration:underline;color:color-mix(in srgb, var(--color-text) 55%, transparent);}
+.comment-delete-btn:hover{color:#b3261e;}
+.comment-empty{font-size:14.5px;padding:8px 0;color:color-mix(in srgb, var(--color-text) 60%, transparent);}
+.comment-skeleton-line{height:16px;margin:0 0 14px;}
+.comment-form-area{margin-top:32px;}
+.comment-form-area textarea{width:100%;box-sizing:border-box;font-family:inherit;font-size:15px;line-height:1.7;
+  min-height:100px;resize:vertical;padding:10px 12px;border:1px solid var(--color-divider);
+  border-radius:var(--radius-md);background:transparent;color:inherit;}
+.comment-form-actions{display:flex;justify-content:flex-end;margin-top:10px;}
+.comment-form-message{font-size:13.5px;margin:10px 0 0;color:#b3261e;}
+.comment-login-hint{font-size:14.5px;color:color-mix(in srgb, var(--color-text) 60%, transparent);}
+
 /* — loading skeleton — */
 @keyframes skeleton-pulse{0%,100%{opacity:1;}50%{opacity:.55;}}
 .skeleton{background:var(--color-neutral-200, #e8e4dd);border-radius:var(--radius-md, 6px);
@@ -163,6 +186,19 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
       </div>
       <p style="margin-top:40px;" id="back-to-list-para" hidden><a href="index.html" class="btn btn-secondary" id="back-to-list">목록으로</a></p>
     </article>
+
+    <section class="comments-section" id="comments-section" hidden>
+      <hr class="rule" style="margin:0 0 40px;">
+      <h2 class="comments-heading">댓글 <span id="comments-count">0</span></h2>
+
+      <div id="comments-list" class="comments-list">
+        <div class="skeleton comment-skeleton-line" style="width:40%;"></div>
+        <div class="skeleton comment-skeleton-line" style="width:92%;"></div>
+        <div class="skeleton comment-skeleton-line" style="width:70%;"></div>
+      </div>
+
+      <div id="comment-form-area" class="comment-form-area"></div>
+    </section>
   </div>
   </main>
 
@@ -218,6 +254,224 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     container.appendChild(body);
   }
 
+  function formatCommentDate(dateStr) {
+    const d = new Date(dateStr);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    const hh = String(d.getHours()).padStart(2, "0");
+    const mi = String(d.getMinutes()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
+  }
+
+  async function fetchComments(postId) {
+    // 1차 시도: comments.author_id가 public.profiles를 직접 참조하는 FK라고 가정하고 중첩 select 사용
+    const nested = await supabase
+      .from("comments")
+      .select("id, author_id, content, created_at, profiles(display_name)")
+      .eq("post_id", postId)
+      .eq("is_deleted", false)
+      .order("created_at", { ascending: true });
+
+    if (!nested.error) {
+      return (nested.data ?? []).map((c) => ({
+        id: c.id,
+        author_id: c.author_id,
+        content: c.content,
+        created_at: c.created_at,
+        display_name: c.profiles?.display_name || "익명",
+      }));
+    }
+
+    // 2차 폴백: author_id가 auth.users를 참조해 중첩 select가 실패하는 경우,
+    // author_id 목록으로 profiles를 별도 조회해 매핑한다.
+    const plain = await supabase
+      .from("comments")
+      .select("id, author_id, content, created_at")
+      .eq("post_id", postId)
+      .eq("is_deleted", false)
+      .order("created_at", { ascending: true });
+
+    if (plain.error) {
+      console.error(plain.error);
+      return [];
+    }
+
+    const rows = plain.data ?? [];
+    const authorIds = [...new Set(rows.map((r) => r.author_id))];
+    let profileMap = {};
+    if (authorIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, display_name")
+        .in("id", authorIds);
+      profileMap = Object.fromEntries((profiles ?? []).map((p) => [p.id, p.display_name]));
+    }
+
+    return rows.map((r) => ({
+      id: r.id,
+      author_id: r.author_id,
+      content: r.content,
+      created_at: r.created_at,
+      display_name: profileMap[r.author_id] || "익명",
+    }));
+  }
+
+  function renderComments(listEl, countEl, comments, { userId, canModerate }) {
+    countEl.textContent = String(comments.length);
+    listEl.innerHTML = "";
+
+    if (comments.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "comment-empty";
+      empty.textContent = "아직 댓글이 없습니다";
+      listEl.appendChild(empty);
+      return;
+    }
+
+    for (const comment of comments) {
+      const item = document.createElement("div");
+      item.className = "comment-item";
+
+      const head = document.createElement("div");
+      head.className = "comment-item-head";
+
+      const author = document.createElement("span");
+      author.className = "comment-author";
+      author.textContent = comment.display_name;
+
+      const dateEl = document.createElement("span");
+      dateEl.className = "comment-date";
+      dateEl.textContent = formatCommentDate(comment.created_at);
+
+      head.appendChild(author);
+      head.appendChild(dateEl);
+      item.appendChild(head);
+
+      const body = document.createElement("p");
+      body.className = "comment-body";
+      body.textContent = comment.content;
+      item.appendChild(body);
+
+      const canDelete = !!userId && (userId === comment.author_id || canModerate);
+      if (canDelete) {
+        const delBtn = document.createElement("button");
+        delBtn.type = "button";
+        delBtn.className = "comment-delete-btn";
+        delBtn.textContent = "삭제";
+        delBtn.dataset.commentId = comment.id;
+        item.appendChild(delBtn);
+      }
+
+      listEl.appendChild(item);
+    }
+  }
+
+  function parseCommentError(message) {
+    const match = /RATE_LIMIT:(\d+)/.exec(message || "");
+    if (match) {
+      const seconds = Number(match[1]);
+      if (seconds < 60) return "잠시 후 다시 작성할 수 있습니다";
+      const minutes = Math.ceil(seconds / 60);
+      return `약 ${minutes}분 후에 다시 작성할 수 있습니다`;
+    }
+    return "댓글 등록에 실패했습니다";
+  }
+
+  function renderLoginPrompt(formArea) {
+    formArea.innerHTML = "";
+    const hint = document.createElement("p");
+    hint.className = "comment-login-hint";
+    hint.textContent = "댓글을 작성하려면 로그인하세요";
+    formArea.appendChild(hint);
+  }
+
+  function renderCommentForm(formArea, { postId, userId, onSubmitted }) {
+    formArea.innerHTML = "";
+
+    const textarea = document.createElement("textarea");
+    textarea.placeholder = "댓글을 입력하세요";
+
+    const actions = document.createElement("div");
+    actions.className = "comment-form-actions";
+
+    const submitBtn = document.createElement("button");
+    submitBtn.type = "button";
+    submitBtn.className = "btn btn-primary";
+    submitBtn.textContent = "등록";
+    actions.appendChild(submitBtn);
+
+    const message = document.createElement("p");
+    message.className = "comment-form-message";
+    message.hidden = true;
+
+    formArea.appendChild(textarea);
+    formArea.appendChild(actions);
+    formArea.appendChild(message);
+
+    submitBtn.addEventListener("click", async () => {
+      const content = textarea.value.trim();
+      if (!content) return;
+
+      message.hidden = true;
+      submitBtn.disabled = true;
+
+      const { error } = await supabase
+        .from("comments")
+        .insert({ post_id: postId, author_id: userId, content });
+
+      submitBtn.disabled = false;
+
+      if (error) {
+        message.textContent = parseCommentError(error.message);
+        message.hidden = false;
+        return;
+      }
+
+      textarea.value = "";
+      await onSubmitted();
+    });
+  }
+
+  async function setupComments(postId, user, role) {
+    const section = document.getElementById("comments-section");
+    const listEl = document.getElementById("comments-list");
+    const countEl = document.getElementById("comments-count");
+    const formArea = document.getElementById("comment-form-area");
+    const canModerate = role === "admin";
+
+    async function reload() {
+      const comments = await fetchComments(postId);
+      renderComments(listEl, countEl, comments, { userId: user?.id, canModerate });
+    }
+
+    listEl.addEventListener("click", async (e) => {
+      const btn = e.target.closest(".comment-delete-btn");
+      if (!btn) return;
+      if (!confirm("댓글을 휴지통으로 이동할까요?")) return;
+
+      const { error } = await supabase
+        .from("comments")
+        .update({ is_deleted: true })
+        .eq("id", btn.dataset.commentId);
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+      await reload();
+    });
+
+    if (user) {
+      renderCommentForm(formArea, { postId, userId: user.id, onSubmitted: reload });
+    } else {
+      renderLoginPrompt(formArea);
+    }
+
+    await reload();
+    section.hidden = false;
+  }
+
   document.addEventListener("DOMContentLoaded", async () => {
     const container = document.getElementById("post-content");
     const backToListPara = document.getElementById("back-to-list-para");
@@ -261,6 +515,8 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     }
 
     backToListPara.hidden = false;
+
+    setupComments(post.id, user, role);
   });
 </script>
 </body>
