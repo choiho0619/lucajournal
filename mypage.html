@@ -417,7 +417,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
   async function loadProfile(userId) {
     const { data, error } = await supabase
       .from("profiles")
-      .select("display_name, email, role")
+      .select("display_name, role")
       .eq("id", userId)
       .single();
 
@@ -430,7 +430,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     }
 
     document.getElementById("display-name-input").value = data.display_name || "";
-    document.getElementById("profile-email").textContent = data.email || "";
+    document.getElementById("profile-email").textContent = currentUser.email || "";
     document.getElementById("profile-role").textContent = roleLabel(data.role);
   }
 
