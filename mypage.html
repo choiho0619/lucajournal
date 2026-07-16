@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>루카저널 — 마이페이지</title>
+<!-- Favicon & Manifest -->
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/assets/icons/favicon-16.png">
+<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="#854F0B">
+<!-- Open Graph & SEO -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="루카저널">
+<meta property="og:title" content="루카저널 마이페이지">
+<meta property="og:url" content="https://lucajournal.com/mypage.html">
+<meta property="og:image" content="https://lucajournal.com/assets/og-default.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="robots" content="noindex, nofollow">
+<template id="__bundler_thumbnail" data-bg-color="#f3f2f2">
+  <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+    <rect width="120" height="120" fill="#f3f2f2"/>
+    <rect x="56" y="30" width="8" height="60" fill="#854F0B"/>
+    <rect x="36" y="50" width="48" height="8" fill="#854F0B"/>
+  </svg>
+</template>
+<style>html{background:#f3f2f2;}</style>
+<link rel="stylesheet" href="_ds/classical-8f6f9324-18f5-4c72-8750-50f577e7d92e/styles.css">
+<script src="./ds-base.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Lora:wght@400;600&display=swap">
+<style>
+:root{
+  /* Brand override: toffee brown accent replaces the system's gold, per brand spec.
+     Ground, text and structural tokens (cream bg, ink text, hairline dividers,
+     spacing/radius/shadow scale) are kept from the Classical system as-is. */
+  --color-accent: #854F0B;
+  --color-accent-2: #854F0B;
+  --color-accent-100: #FBF1E4;
+  --color-accent-200: #F2DFC0;
+  --color-accent-300: #E0BD86;
+  --color-accent-400: #C99A57;
+  --color-accent-500: #A8722C;
+  --color-accent-600: #854F0B;
+  --color-accent-700: #6E4109;
+  --color-accent-800: #573307;
+  --color-accent-900: #2A1804;
+  --color-accent-2-100: #FBF1E4;
+  --color-accent-2-200: #F2DFC0;
+  --color-accent-2-300: #E0BD86;
+  --color-accent-2-400: #C99A57;
+  --color-accent-2-500: #A8722C;
+  --color-accent-2-600: #854F0B;
+  --color-accent-2-700: #6E4109;
+  --color-accent-2-800: #573307;
+  --color-accent-2-900: #2A1804;
+  /* Korean serif stack: Noto Serif KR for Hangul, system serif fallback for Latin/numerals */
+  --font-kr-heading: "Noto Serif KR", var(--font-heading), serif;
+  --font-kr-body: "Noto Serif KR", var(--font-body), serif;
+}
+/* View Transitions API: 크로스 도큐먼트 전환. 미지원 브라우저에서는 조용히 무시되는 progressive enhancement */
+@view-transition {
+  navigation: auto;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.18s;
+}
+html{scroll-behavior:smooth;}
+body{margin:0;text-wrap:pretty;font-family:var(--font-kr-body);display:flex;flex-direction:column;min-height:100vh;}
+/* footer 위치 고정: body 직속 wrapper(div 또는 index.html의 section)를 flex column으로 늘리고,
+   footer는 margin-top:auto로 항상 맨 아래에 붙인다 */
+body > div,body > section{flex:1;display:flex;flex-direction:column;}
+body > section > div{flex:1;display:flex;flex-direction:column;}
+.page-main{flex:1;}
+h1,h2,h3,h4,h5,h6{font-family:var(--font-kr-heading);}
+.wrap{max-width:1120px;margin:0 auto;padding:0 clamp(20px,5vw,64px);}
+.rule{height:1px;border:0;margin:0;background:var(--color-divider);}
+a{color:var(--color-accent-700);text-decoration:none;}
+a:hover{color:var(--color-accent);text-decoration:underline;}
+
+/* — cross mark (simple silhouette, no ornament) — */
+.cross{position:relative;width:20px;height:20px;flex:none;}
+.cross::before,.cross::after{content:"";position:absolute;background:var(--color-accent);}
+.cross::before{left:50%;top:0;width:3px;height:100%;transform:translateX(-50%);}
+.cross::after{top:38%;left:0;width:100%;height:3px;}
+
+/* — masthead / nav — */
+.nav{display:flex;align-items:center;justify-content:space-between;gap:24px;
+  padding:22px clamp(20px,5vw,64px);}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand-name{font-family:var(--font-kr-heading);font-weight:600;font-size:20px;letter-spacing:-.01em;}
+.nav-links{display:flex;gap:28px;align-items:center;list-style:none;margin:0;padding:0;}
+.nav-links a{font-size:14.5px;color:#201f1d;}
+.nav-links a:hover{color:var(--color-accent-700);}
+
+/* — hero shared type — */
+.eyebrow{display:block;font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--color-accent-700);font-weight:600;margin:0 0 14px;}
+.headline{font-weight:600;letter-spacing:-.01em;margin:0;}
+.sub{font-size:16.5px;line-height:1.7;color:color-mix(in srgb, var(--color-text) 76%, transparent);
+  max-width:56ch;margin:16px 0 0;}
+
+/* — mypage sections — */
+.mypage-section{padding:48px 0;max-width:800px;}
+.mypage-section:first-child{padding-top:56px;}
+.mypage-section:last-child{padding-bottom:64px;}
+
+/* — profile field (write.html 관례 재사용) — */
+.field{margin:0 0 20px;}
+.field label{display:block;font-size:13px;font-weight:600;color:var(--color-accent-700);margin:0 0 8px;}
+.field input{width:100%;box-sizing:border-box;font-family:inherit;font-size:15px;
+  padding:10px 12px;border:1px solid var(--color-divider);border-radius:var(--radius-md);background:transparent;color:inherit;}
+.field .field-static{font-size:15px;margin:0;color:color-mix(in srgb, var(--color-text) 88%, transparent);}
+.form-actions{display:flex;gap:12px;margin-top:8px;}
+.form-message{font-size:14px;margin:16px 0 0;}
+
+/* — comments (post.html 관례 재사용) — */
+.comments-heading{font-size:20px;font-weight:600;margin:0 0 24px;}
+.comment-item{padding:20px 0;border-bottom:1px solid var(--color-divider);}
+.comment-item:first-child{padding-top:0;}
+.comment-item-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:0 0 8px;}
+.comment-author{font-size:14px;font-weight:600;}
+.comment-date{font-size:12.5px;color:color-mix(in srgb, var(--color-text) 55%, transparent);}
+.comment-body{font-size:15px;line-height:1.75;white-space:pre-wrap;word-break:break-word;margin:0;
+  color:color-mix(in srgb, var(--color-text) 88%, transparent);}
+.comment-delete-btn{background:none;border:0;padding:0;margin-top:8px;font-size:12.5px;cursor:pointer;
+  text-decoration:underline;color:color-mix(in srgb, var(--color-text) 55%, transparent);}
+.comment-delete-btn:hover{color:#b3261e;}
+.comment-empty{font-size:14.5px;padding:8px 0;color:color-mix(in srgb, var(--color-text) 60%, transparent);}
+.comment-skeleton-line{height:16px;margin:0 0 14px;}
+
+/* — loading skeleton — */
+@keyframes skeleton-pulse{0%,100%{opacity:1;}50%{opacity:.55;}}
+.skeleton{background:var(--color-neutral-200, #e8e4dd);border-radius:var(--radius-md, 6px);
+  animation:skeleton-pulse 1.4s ease-in-out infinite;}
+
+[hidden]{display:none !important;}
+
+footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
+  color:color-mix(in srgb, var(--color-text) 60%, transparent);
+  display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:auto;}
+</style>
+</head>
+<body>
+
+<div>
+  <nav class="nav">
+    <a class="brand" href="index.html" style="text-decoration:none;color:inherit;"><span class="cross"></span><span class="brand-name">루카저널</span></a>
+    <ul class="nav-links">
+      <li><a href="category.html?code=DAILY">묵상</a></li>
+      <li><a href="category.html?code=PERSPECTIVE">시사</a></li>
+      <li><a href="category.html?code=HERITAGE">역사</a></li>
+      <li><a href="category.html?code=APOLOGETICS">변증</a></li>
+      <li><a href="category.html?code=NOTICE">공지</a></li>
+      <li><a href="about.html">소개</a></li>
+    </ul>
+    <div id="auth-area" style="display:flex;align-items:center;gap:12px;min-width:140px;"></div>
+  </nav>
+  <main class="page-main">
+<hr class="rule">
+
+  <div class="wrap">
+    <section class="mypage-section" style="padding-bottom:0;">
+      <span class="eyebrow">루카저널</span>
+      <h1 class="headline" style="font-size:clamp(28px,3.2vw,40px);">마이페이지</h1>
+    </section>
+  </div>
+
+  <div id="gate-login" class="wrap" hidden style="padding:32px 0 64px;">
+    <p class="sub">로그인이 필요한 페이지입니다</p>
+    <button type="button" id="gate-login-btn" class="btn btn-primary" style="margin-top:16px;">로그인</button>
+  </div>
+
+  <div id="mypage-content" hidden>
+    <div class="wrap">
+      <section class="mypage-section">
+        <h2 class="comments-heading">내 정보</h2>
+        <div id="profile-skeleton">
+          <div class="skeleton comment-skeleton-line" style="width:30%;"></div>
+          <div class="skeleton comment-skeleton-line" style="width:50%;"></div>
+          <div class="skeleton comment-skeleton-line" style="width:20%;"></div>
+        </div>
+        <div id="profile-area" hidden>
+          <div class="field">
+            <label for="display-name-input">닉네임</label>
+            <input id="display-name-input" type="text" maxlength="30" />
+          </div>
+          <div class="field">
+            <label>이메일</label>
+            <p id="profile-email" class="field-static"></p>
+          </div>
+          <div class="field">
+            <label>등급</label>
+            <p id="profile-role" class="field-static"></p>
+          </div>
+          <div class="form-actions">
+            <button type="button" id="save-profile-btn" class="btn btn-primary">저장</button>
+          </div>
+          <p id="profile-message" class="form-message" hidden></p>
+        </div>
+      </section>
+    </div>
+    <hr class="rule">
+
+    <div class="wrap">
+      <section class="mypage-section">
+        <h2 class="comments-heading">내 댓글</h2>
+        <div id="my-comments-list" class="comments-list">
+          <div class="skeleton comment-skeleton-line" style="width:40%;"></div>
+          <div class="skeleton comment-skeleton-line" style="width:92%;"></div>
+          <div class="skeleton comment-skeleton-line" style="width:70%;"></div>
+        </div>
+      </section>
+    </div>
+    <hr class="rule">
+
+    <div class="wrap">
+      <section class="mypage-section">
+        <h2 class="comments-heading">휴지통</h2>
+        <div id="trash-comments-list" class="comments-list">
+          <div class="skeleton comment-skeleton-line" style="width:40%;"></div>
+          <div class="skeleton comment-skeleton-line" style="width:92%;"></div>
+          <div class="skeleton comment-skeleton-line" style="width:70%;"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+  </main>
+
+  <footer class="site-footer">
+    <span>© 2026 Luca Journal. All rights reserved.</span>
+    <span style="display:flex;gap:16px;flex-wrap:wrap;"><a href="terms.html">이용약관</a><a href="privacy.html">개인정보처리방침</a></span>
+  </footer>
+</div>
+
+<script type="module" src="./auth-ui.js"></script>
+<script type="module">
+  import { supabase, signInWithGoogle } from "./auth.js";
+  import { refreshAuthUI } from "./auth-ui.js";
+
+  let currentUser = null;
+
+  function formatCommentDate(dateStr) {
+    const d = new Date(dateStr);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    const hh = String(d.getHours()).padStart(2, "0");
+    const mi = String(d.getMinutes()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
+  }
+
+  function roleLabel(role) {
+    if (role === "admin") return "관리자";
+    if (role === "writer") return "작성자";
+    if (role === "member") return "회원";
+    return role || "-";
+  }
+
+  async function fetchMyComments(userId, isDeleted) {
+    // 1차 시도: comments.post_id → posts 중첩 select
+    const nested = await supabase
+      .from("comments")
+      .select("id, content, created_at, post_id, posts(title, slug)")
+      .eq("author_id", userId)
+      .eq("is_deleted", isDeleted)
+      .order("created_at", { ascending: false });
+
+    if (!nested.error) {
+      return (nested.data ?? []).map((c) => ({
+        id: c.id,
+        content: c.content,
+        created_at: c.created_at,
+        post_title: c.posts?.title ?? null,
+        post_slug: c.posts?.slug ?? null,
+      }));
+    }
+
+    // 2차 폴백: 중첩 select가 FK 문제로 실패하는 경우, post_id 목록으로 posts를 별도 조회
+    const plain = await supabase
+      .from("comments")
+      .select("id, content, created_at, post_id")
+      .eq("author_id", userId)
+      .eq("is_deleted", isDeleted)
+      .order("created_at", { ascending: false });
+
+    if (plain.error) {
+      console.error(plain.error);
+      return [];
+    }
+
+    const rows = plain.data ?? [];
+    const postIds = [...new Set(rows.map((r) => r.post_id))];
+    let postMap = {};
+    if (postIds.length > 0) {
+      const { data: posts } = await supabase
+        .from("posts")
+        .select("id, title, slug")
+        .in("id", postIds);
+      postMap = Object.fromEntries((posts ?? []).map((p) => [p.id, p]));
+    }
+
+    return rows.map((r) => ({
+      id: r.id,
+      content: r.content,
+      created_at: r.created_at,
+      post_title: postMap[r.post_id]?.title ?? null,
+      post_slug: postMap[r.post_id]?.slug ?? null,
+    }));
+  }
+
+  function buildCommentItem(comment) {
+    const item = document.createElement("div");
+    item.className = "comment-item";
+
+    const head = document.createElement("div");
+    head.className = "comment-item-head";
+
+    let titleEl;
+    if (comment.post_slug && comment.post_title) {
+      titleEl = document.createElement("a");
+      titleEl.className = "comment-author";
+      titleEl.href = `post.html?slug=${encodeURIComponent(comment.post_slug)}`;
+      titleEl.textContent = comment.post_title;
+    } else {
+      titleEl = document.createElement("span");
+      titleEl.className = "comment-author";
+      titleEl.textContent = "(비공개 글)";
+    }
+
+    const dateEl = document.createElement("span");
+    dateEl.className = "comment-date";
+    dateEl.textContent = formatCommentDate(comment.created_at);
+
+    head.appendChild(titleEl);
+    head.appendChild(dateEl);
+    item.appendChild(head);
+
+    const body = document.createElement("p");
+    body.className = "comment-body";
+    body.textContent = comment.content;
+    item.appendChild(body);
+
+    return item;
+  }
+
+  function renderCommentListInto(listEl, comments, emptyText, mode) {
+    listEl.innerHTML = "";
+
+    if (comments.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "comment-empty";
+      empty.textContent = emptyText;
+      listEl.appendChild(empty);
+      return;
+    }
+
+    for (const comment of comments) {
+      const item = buildCommentItem(comment);
+
+      const actions = document.createElement("div");
+      actions.style.cssText = "margin-top:8px;display:flex;gap:16px;";
+
+      if (mode === "active") {
+        const trashBtn = document.createElement("button");
+        trashBtn.type = "button";
+        trashBtn.className = "comment-delete-btn";
+        trashBtn.textContent = "휴지통으로 이동";
+        trashBtn.dataset.commentId = comment.id;
+        trashBtn.dataset.action = "trash";
+        actions.appendChild(trashBtn);
+      } else {
+        const restoreBtn = document.createElement("button");
+        restoreBtn.type = "button";
+        restoreBtn.className = "comment-delete-btn";
+        restoreBtn.textContent = "복원";
+        restoreBtn.dataset.commentId = comment.id;
+        restoreBtn.dataset.action = "restore";
+
+        const purgeBtn = document.createElement("button");
+        purgeBtn.type = "button";
+        purgeBtn.className = "comment-delete-btn";
+        purgeBtn.textContent = "영구 삭제";
+        purgeBtn.dataset.commentId = comment.id;
+        purgeBtn.dataset.action = "purge";
+
+        actions.appendChild(restoreBtn);
+        actions.appendChild(purgeBtn);
+      }
+
+      item.appendChild(actions);
+      listEl.appendChild(item);
+    }
+  }
+
+  async function reloadMyComments() {
+    const list = await fetchMyComments(currentUser.id, false);
+    renderCommentListInto(document.getElementById("my-comments-list"), list, "아직 작성한 댓글이 없습니다", "active");
+  }
+
+  async function reloadTrash() {
+    const list = await fetchMyComments(currentUser.id, true);
+    renderCommentListInto(document.getElementById("trash-comments-list"), list, "휴지통이 비어 있습니다", "trash");
+  }
+
+  async function reloadBoth() {
+    await Promise.all([reloadMyComments(), reloadTrash()]);
+  }
+
+  async function loadProfile(userId) {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("display_name, email, role")
+      .eq("id", userId)
+      .single();
+
+    document.getElementById("profile-skeleton").hidden = true;
+    document.getElementById("profile-area").hidden = false;
+
+    if (error || !data) {
+      console.error(error);
+      return;
+    }
+
+    document.getElementById("display-name-input").value = data.display_name || "";
+    document.getElementById("profile-email").textContent = data.email || "";
+    document.getElementById("profile-role").textContent = roleLabel(data.role);
+  }
+
+  function showProfileMessage(text, isError) {
+    const message = document.getElementById("profile-message");
+    message.textContent = text;
+    message.style.color = isError ? "#b3261e" : "";
+    message.hidden = false;
+  }
+
+  async function saveDisplayName() {
+    const input = document.getElementById("display-name-input");
+    const saveBtn = document.getElementById("save-profile-btn");
+    const value = input.value.trim();
+
+    document.getElementById("profile-message").hidden = true;
+
+    if (!value || value.length > 30) {
+      showProfileMessage("닉네임은 1~30자로 입력해주세요", true);
+      return;
+    }
+
+    saveBtn.disabled = true;
+    // display_name 단일 필드만 전송: 다른 컬럼은 GRANT로 update가 거부되어
+    // 함께 보내면 전체 요청이 실패한다.
+    const { error } = await supabase
+      .from("profiles")
+      .update({ display_name: value })
+      .eq("id", currentUser.id);
+    saveBtn.disabled = false;
+
+    if (error) {
+      showProfileMessage("저장에 실패했습니다", true);
+      return;
+    }
+
+    showProfileMessage("저장되었습니다", false);
+    await refreshAuthUI();
+  }
+
+  document.getElementById("save-profile-btn").addEventListener("click", saveDisplayName);
+
+  document.getElementById("my-comments-list").addEventListener("click", async (e) => {
+    const btn = e.target.closest("button[data-action='trash']");
+    if (!btn) return;
+    if (!confirm("댓글을 휴지통으로 이동할까요?")) return;
+
+    const { error } = await supabase
+      .from("comments")
+      .update({ is_deleted: true })
+      .eq("id", btn.dataset.commentId);
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+    await reloadBoth();
+  });
+
+  document.getElementById("trash-comments-list").addEventListener("click", async (e) => {
+    const btn = e.target.closest("button[data-action]");
+    if (!btn) return;
+    const action = btn.dataset.action;
+
+    if (action === "restore") {
+      const { error } = await supabase
+        .from("comments")
+        .update({ is_deleted: false })
+        .eq("id", btn.dataset.commentId);
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+      await reloadBoth();
+      return;
+    }
+
+    if (action === "purge") {
+      if (!confirm("댓글을 완전히 삭제할까요? 되돌릴 수 없습니다.")) return;
+
+      const { error } = await supabase
+        .from("comments")
+        .delete()
+        .eq("id", btn.dataset.commentId);
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+      await reloadTrash();
+    }
+  });
+
+  document.getElementById("gate-login-btn").addEventListener("click", () => signInWithGoogle());
+
+  document.addEventListener("DOMContentLoaded", async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      document.getElementById("gate-login").hidden = false;
+      return;
+    }
+
+    currentUser = user;
+    document.getElementById("mypage-content").hidden = false;
+
+    await loadProfile(user.id);
+    await reloadBoth();
+  });
+</script>
+</body>
+</html>

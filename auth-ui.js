@@ -15,9 +15,11 @@ function renderLoggedOut() {
 function renderLoggedIn(name) {
   authArea.innerHTML = "";
 
-  const nameEl = document.createElement("span");
+  const nameEl = document.createElement("a");
+  nameEl.href = "mypage.html";
   nameEl.className = "nav-links";
   nameEl.style.fontSize = "14.5px";
+  nameEl.style.color = "#201f1d";
   nameEl.textContent = name;
 
   const logoutBtn = document.createElement("button");
@@ -46,6 +48,11 @@ async function renderForUser(user) {
   }
   const name = await resolveDisplayName(user);
   renderLoggedIn(name);
+}
+
+export async function refreshAuthUI() {
+  const { data: { session } } = await supabase.auth.getSession();
+  await renderForUser(session?.user ?? null);
 }
 
 supabase.auth.getSession().then(({ data: { session } }) => {
