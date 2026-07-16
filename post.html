@@ -245,10 +245,14 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     const body = document.createElement("div");
     body.className = "post-body";
     body.style.marginTop = "32px";
-    const lines = (post.content || "").split("\n").filter((line) => line.trim() !== "");
-    for (const line of lines) {
+    const paragraphs = (post.content || "").split(/\n{2,}/).filter((para) => para.trim() !== "");
+    for (const para of paragraphs) {
       const p = document.createElement("p");
-      p.textContent = line;
+      const paraLines = para.split("\n");
+      paraLines.forEach((paraLine, i) => {
+        if (i > 0) p.appendChild(document.createElement("br"));
+        p.appendChild(document.createTextNode(paraLine));
+      });
       body.appendChild(p);
     }
     container.appendChild(body);
