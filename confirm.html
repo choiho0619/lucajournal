@@ -173,7 +173,8 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
       return;
     }
 
-    messageEl.textContent = `구독이 확인되었습니다. ${result.email}로 매일 새 글을 보내드립니다.`;
+    messageEl.textContent = `구독이 확인되었습니다. ${result.email}로 매일 정오에 새 글을 보내드립니다.`;
+    localStorage.setItem("lj_subscribed", "1");
   });
 </script>
 </body>

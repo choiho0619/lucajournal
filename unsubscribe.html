@@ -181,6 +181,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 
       if (data === true) {
         messageEl.textContent = "구독이 해지되었습니다.";
+        localStorage.removeItem("lj_subscribed");
         return;
       }
 

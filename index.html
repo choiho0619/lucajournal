@@ -121,6 +121,9 @@ a:hover{color:var(--color-accent);text-decoration:underline;}
 .headline{font-weight:600;letter-spacing:-.01em;margin:0;}
 .sub{font-size:16.5px;line-height:1.7;color:color-mix(in srgb, var(--color-text) 76%, transparent);
   max-width:56ch;margin:16px 0 0;word-break:keep-all;}
+.subscribed-badge{display:inline-block;font-size:13px;line-height:1.5;font-weight:600;
+  color:var(--color-accent-700);border:1px solid var(--color-accent-700);border-radius:var(--radius-md);
+  padding:8px 14px;word-break:keep-all;margin:0;}
 
 /* — three axes cards — */
 .axis-card{border:1px solid var(--color-divider);border-radius:var(--radius-md);padding:28px 26px;
@@ -254,7 +257,17 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
   document.addEventListener("DOMContentLoaded", async () => {
     const posts = await fetchRecentPosts();
     renderRecentPosts(posts);
-    initSubscribeWidget("subscribe-mount");
+
+    if (localStorage.getItem("lj_subscribed") === "1") {
+      const mount = document.getElementById("subscribe-mount");
+      mount.style.maxWidth = "56ch";
+      const already = document.createElement("p");
+      already.className = "subscribed-badge";
+      already.textContent = "매일 정오, 새 글을 이메일로 보내드리고 있습니다.";
+      mount.appendChild(already);
+    } else {
+      initSubscribeWidget("subscribe-mount");
+    }
   });
 </script>
 </body>
