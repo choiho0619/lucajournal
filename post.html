@@ -120,7 +120,8 @@ a:hover{color:var(--color-accent);text-decoration:underline;}
 
 /* — post detail body copy — */
 .post-body p{font-size:16px;line-height:1.85;margin:0 0 20px;
-  color:color-mix(in srgb, var(--color-text) 88%, transparent);}
+  color:color-mix(in srgb, var(--color-text) 88%, transparent);
+  word-break:keep-all;overflow-wrap:break-word;}
 @media (min-width: 641px){
   .post-body p{text-align:justify;}
 }
