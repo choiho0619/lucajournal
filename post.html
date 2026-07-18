@@ -531,6 +531,32 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
       editLink.href = `write.html?edit=${encodeURIComponent(post.id)}`;
       editLink.textContent = "수정";
       backToList.after(editLink);
+
+      if (role === "admin") {
+        const unpublishBtn = document.createElement("button");
+        unpublishBtn.type = "button";
+        unpublishBtn.className = "btn btn-primary";
+        unpublishBtn.id = "unpublish-post-btn";
+        unpublishBtn.style.marginLeft = "12px";
+        unpublishBtn.textContent = "초안으로 내리기";
+        unpublishBtn.addEventListener("click", async () => {
+          if (!confirm("이 글을 초안으로 내리시겠습니까? 사이트에서 더 이상 표시되지 않습니다.")) return;
+
+          const { error } = await supabase
+            .from("posts")
+            .update({ status: "draft" })
+            .eq("id", post.id);
+
+          if (error) {
+            alert(error.message || "초안으로 내리는 중 오류가 발생했습니다");
+            return;
+          }
+
+          alert("초안으로 내렸습니다");
+          window.location.href = backToList.href;
+        });
+        editLink.after(unpublishBtn);
+      }
     }
 
     backToListPara.hidden = false;
