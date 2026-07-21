@@ -160,6 +160,12 @@ a:hover{color:var(--color-accent);text-decoration:underline;}
 .comment-edit-textarea{width:100%;box-sizing:border-box;font-family:inherit;font-size:15px;line-height:1.75;
   min-height:80px;resize:vertical;padding:10px 12px;border:1px solid var(--color-divider);
   border-radius:var(--radius-md);background:transparent;color:inherit;margin:0 0 8px;}
+.comment-replies{margin:12px 0 0 32px;padding-left:16px;}
+.comment-replies .comment-item{background:var(--color-surface);border-radius:var(--radius-md);
+  border-bottom:0;padding:16px 20px;margin-bottom:12px;}
+.comment-replies .comment-item:first-child{padding-top:16px;}
+.comment-replies .comment-item:last-child{margin-bottom:0;}
+.comment-reply-form{margin-top:12px;}
 .comment-empty{font-size:14.5px;padding:8px 0;color:color-mix(in srgb, var(--color-text) 60%, transparent);}
 .comment-skeleton-line{height:16px;margin:0 0 14px;}
 .comment-form-area{margin-top:32px;}
@@ -312,7 +318,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     // 1차 시도: comments.author_id가 public.profiles를 직접 참조하는 FK라고 가정하고 중첩 select 사용
     const nested = await supabase
       .from("comments")
-      .select("id, author_id, content, created_at, profiles(display_name)")
+      .select("id, author_id, content, created_at, parent_comment_id, profiles(display_name)")
       .eq("post_id", postId)
       .eq("is_deleted", false)
       .order("created_at", { ascending: true });
@@ -323,6 +329,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
         author_id: c.author_id,
         content: c.content,
         created_at: c.created_at,
+        parent_comment_id: c.parent_comment_id,
         display_name: c.profiles?.display_name || "익명",
       }));
     }
@@ -331,7 +338,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     // author_id 목록으로 profiles를 별도 조회해 매핑한다.
     const plain = await supabase
       .from("comments")
-      .select("id, author_id, content, created_at")
+      .select("id, author_id, content, created_at, parent_comment_id")
       .eq("post_id", postId)
       .eq("is_deleted", false)
       .order("created_at", { ascending: true });
@@ -357,57 +364,64 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
       author_id: r.author_id,
       content: r.content,
       created_at: r.created_at,
+      parent_comment_id: r.parent_comment_id,
       display_name: profileMap[r.author_id] || "익명",
     }));
   }
 
-  function renderComments(listEl, countEl, comments, { userId, canModerate }) {
-    countEl.textContent = String(comments.length);
-    listEl.innerHTML = "";
-
-    if (comments.length === 0) {
-      const empty = document.createElement("p");
-      empty.className = "comment-empty";
-      empty.textContent = "아직 댓글이 없습니다";
-      listEl.appendChild(empty);
-      return;
+  function parseCommentError(message) {
+    const match = /RATE_LIMIT:(\d+)/.exec(message || "");
+    if (match) {
+      const seconds = Number(match[1]);
+      if (seconds < 60) return "잠시 후 다시 작성할 수 있습니다";
+      const minutes = Math.ceil(seconds / 60);
+      return `약 ${minutes}분 후에 다시 작성할 수 있습니다`;
     }
+    return "댓글 등록에 실패했습니다";
+  }
 
-    for (const comment of comments) {
-      const item = document.createElement("div");
-      item.className = "comment-item";
+  function buildCommentItem(comment, { userId, canModerate, isReply, postId, onReload }) {
+    const item = document.createElement("div");
+    item.className = "comment-item";
 
-      const head = document.createElement("div");
-      head.className = "comment-item-head";
+    const head = document.createElement("div");
+    head.className = "comment-item-head";
 
-      const author = document.createElement("span");
-      author.className = "comment-author";
-      author.textContent = comment.display_name;
+    const author = document.createElement("span");
+    author.className = "comment-author";
+    author.textContent = comment.display_name;
 
-      const dateEl = document.createElement("span");
-      dateEl.className = "comment-date";
-      dateEl.textContent = formatCommentDate(comment.created_at);
+    const dateEl = document.createElement("span");
+    dateEl.className = "comment-date";
+    dateEl.textContent = formatCommentDate(comment.created_at);
 
-      head.appendChild(author);
-      head.appendChild(dateEl);
-      item.appendChild(head);
+    head.appendChild(author);
+    head.appendChild(dateEl);
+    item.appendChild(head);
 
-      const body = document.createElement("p");
-      body.className = "comment-body";
-      body.textContent = comment.content;
-      item.appendChild(body);
+    const body = document.createElement("p");
+    body.className = "comment-body";
+    body.textContent = comment.content;
+    item.appendChild(body);
 
-      const canModify = !!userId && (userId === comment.author_id || canModerate);
+    const canModify = !!userId && (userId === comment.author_id || canModerate);
+    const canReply = !isReply && !!userId;
+
+    if (canModify || canReply) {
+      const actions = document.createElement("div");
+      actions.className = "comment-actions";
+
+      let editBtn = null;
+      let delBtn = null;
+      let replyBtn = null;
+
       if (canModify) {
-        const actions = document.createElement("div");
-        actions.className = "comment-actions";
-
-        const editBtn = document.createElement("button");
+        editBtn = document.createElement("button");
         editBtn.type = "button";
         editBtn.className = "comment-action-btn comment-edit-btn";
         editBtn.textContent = "수정";
 
-        const delBtn = document.createElement("button");
+        delBtn = document.createElement("button");
         delBtn.type = "button";
         delBtn.className = "comment-action-btn comment-delete-btn";
         delBtn.textContent = "삭제";
@@ -415,8 +429,19 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 
         actions.appendChild(editBtn);
         actions.appendChild(delBtn);
-        item.appendChild(actions);
+      }
 
+      if (canReply) {
+        replyBtn = document.createElement("button");
+        replyBtn.type = "button";
+        replyBtn.className = "comment-action-btn comment-reply-btn";
+        replyBtn.textContent = "답글";
+        actions.appendChild(replyBtn);
+      }
+
+      item.appendChild(actions);
+
+      if (editBtn) {
         editBtn.addEventListener("click", () => {
           const textarea = document.createElement("textarea");
           textarea.className = "comment-edit-textarea";
@@ -491,19 +516,115 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
         });
       }
 
-      listEl.appendChild(item);
+      if (replyBtn) {
+        replyBtn.addEventListener("click", () => {
+          if (item.querySelector(".comment-reply-form")) return;
+
+          const formWrap = document.createElement("div");
+          formWrap.className = "comment-reply-form";
+
+          const textarea = document.createElement("textarea");
+          textarea.className = "comment-edit-textarea";
+          textarea.placeholder = "답글을 입력하세요";
+
+          const formActions = document.createElement("div");
+          formActions.className = "comment-actions";
+
+          const submitBtn = document.createElement("button");
+          submitBtn.type = "button";
+          submitBtn.className = "btn btn-primary";
+          submitBtn.textContent = "등록";
+
+          const cancelBtn = document.createElement("button");
+          cancelBtn.type = "button";
+          cancelBtn.className = "comment-action-btn";
+          cancelBtn.textContent = "취소";
+
+          formActions.appendChild(submitBtn);
+          formActions.appendChild(cancelBtn);
+
+          const message = document.createElement("p");
+          message.className = "comment-form-message";
+          message.hidden = true;
+
+          formWrap.appendChild(textarea);
+          formWrap.appendChild(formActions);
+          formWrap.appendChild(message);
+
+          item.appendChild(formWrap);
+          textarea.focus();
+
+          cancelBtn.addEventListener("click", () => formWrap.remove());
+
+          submitBtn.addEventListener("click", async () => {
+            const content = textarea.value.trim();
+            if (!content) {
+              message.textContent = "내용을 입력하세요";
+              message.hidden = false;
+              return;
+            }
+
+            message.hidden = true;
+            submitBtn.disabled = true;
+
+            const { error } = await supabase
+              .from("comments")
+              .insert({ post_id: postId, author_id: userId, content, parent_comment_id: comment.id });
+
+            submitBtn.disabled = false;
+
+            if (error) {
+              message.textContent = parseCommentError(error.message);
+              message.hidden = false;
+              return;
+            }
+
+            formWrap.remove();
+            await onReload();
+          });
+        });
+      }
     }
+
+    return item;
   }
 
-  function parseCommentError(message) {
-    const match = /RATE_LIMIT:(\d+)/.exec(message || "");
-    if (match) {
-      const seconds = Number(match[1]);
-      if (seconds < 60) return "잠시 후 다시 작성할 수 있습니다";
-      const minutes = Math.ceil(seconds / 60);
-      return `약 ${minutes}분 후에 다시 작성할 수 있습니다`;
+  function renderComments(listEl, countEl, comments, { userId, canModerate, postId, onReload }) {
+    countEl.textContent = String(comments.length);
+    listEl.innerHTML = "";
+
+    if (comments.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "comment-empty";
+      empty.textContent = "아직 댓글이 없습니다";
+      listEl.appendChild(empty);
+      return;
     }
-    return "댓글 등록에 실패했습니다";
+
+    const topLevel = comments.filter((c) => !c.parent_comment_id);
+    const repliesByParent = {};
+    for (const c of comments) {
+      if (c.parent_comment_id) {
+        if (!repliesByParent[c.parent_comment_id]) repliesByParent[c.parent_comment_id] = [];
+        repliesByParent[c.parent_comment_id].push(c);
+      }
+    }
+
+    for (const parent of topLevel) {
+      const item = buildCommentItem(parent, { userId, canModerate, isReply: false, postId, onReload });
+      listEl.appendChild(item);
+
+      const replies = repliesByParent[parent.id];
+      if (replies && replies.length > 0) {
+        const repliesWrap = document.createElement("div");
+        repliesWrap.className = "comment-replies";
+        for (const reply of replies) {
+          const replyItem = buildCommentItem(reply, { userId, canModerate, isReply: true, postId, onReload });
+          repliesWrap.appendChild(replyItem);
+        }
+        listEl.appendChild(repliesWrap);
+      }
+    }
   }
 
   function renderLoginPrompt(formArea) {
@@ -570,7 +691,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 
     async function reload() {
       const comments = await fetchComments(postId);
-      renderComments(listEl, countEl, comments, { userId: user?.id, canModerate });
+      renderComments(listEl, countEl, comments, { userId: user?.id, canModerate, postId, onReload: reload });
     }
 
     listEl.addEventListener("click", async (e) => {
