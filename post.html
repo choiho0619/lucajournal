@@ -152,9 +152,14 @@ a:hover{color:var(--color-accent);text-decoration:underline;}
 .comment-date{font-size:12.5px;color:color-mix(in srgb, var(--color-text) 55%, transparent);}
 .comment-body{font-size:15px;line-height:1.75;white-space:pre-wrap;word-break:break-word;margin:0;
   color:color-mix(in srgb, var(--color-text) 88%, transparent);}
-.comment-delete-btn{background:none;border:0;padding:0;margin-top:8px;font-size:12.5px;cursor:pointer;
+.comment-actions{display:flex;gap:14px;align-items:center;margin-top:8px;}
+.comment-action-btn{background:none;border:0;padding:0;font-size:12.5px;cursor:pointer;
   text-decoration:underline;color:color-mix(in srgb, var(--color-text) 55%, transparent);}
+.comment-action-btn:hover{color:var(--color-accent-700);}
 .comment-delete-btn:hover{color:#b3261e;}
+.comment-edit-textarea{width:100%;box-sizing:border-box;font-family:inherit;font-size:15px;line-height:1.75;
+  min-height:80px;resize:vertical;padding:10px 12px;border:1px solid var(--color-divider);
+  border-radius:var(--radius-md);background:transparent;color:inherit;margin:0 0 8px;}
 .comment-empty{font-size:14.5px;padding:8px 0;color:color-mix(in srgb, var(--color-text) 60%, transparent);}
 .comment-skeleton-line{height:16px;margin:0 0 14px;}
 .comment-form-area{margin-top:32px;}
@@ -392,14 +397,98 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
       body.textContent = comment.content;
       item.appendChild(body);
 
-      const canDelete = !!userId && (userId === comment.author_id || canModerate);
-      if (canDelete) {
+      const canModify = !!userId && (userId === comment.author_id || canModerate);
+      if (canModify) {
+        const actions = document.createElement("div");
+        actions.className = "comment-actions";
+
+        const editBtn = document.createElement("button");
+        editBtn.type = "button";
+        editBtn.className = "comment-action-btn comment-edit-btn";
+        editBtn.textContent = "수정";
+
         const delBtn = document.createElement("button");
         delBtn.type = "button";
-        delBtn.className = "comment-delete-btn";
+        delBtn.className = "comment-action-btn comment-delete-btn";
         delBtn.textContent = "삭제";
         delBtn.dataset.commentId = comment.id;
-        item.appendChild(delBtn);
+
+        actions.appendChild(editBtn);
+        actions.appendChild(delBtn);
+        item.appendChild(actions);
+
+        editBtn.addEventListener("click", () => {
+          const textarea = document.createElement("textarea");
+          textarea.className = "comment-edit-textarea";
+          textarea.value = comment.content;
+
+          const editActions = document.createElement("div");
+          editActions.className = "comment-actions";
+
+          const saveBtn = document.createElement("button");
+          saveBtn.type = "button";
+          saveBtn.className = "btn btn-primary";
+          saveBtn.textContent = "저장";
+
+          const cancelBtn = document.createElement("button");
+          cancelBtn.type = "button";
+          cancelBtn.className = "comment-action-btn";
+          cancelBtn.textContent = "취소";
+
+          editActions.appendChild(saveBtn);
+          editActions.appendChild(cancelBtn);
+
+          const editMessage = document.createElement("p");
+          editMessage.className = "comment-form-message";
+          editMessage.hidden = true;
+
+          body.hidden = true;
+          actions.hidden = true;
+          item.insertBefore(textarea, actions);
+          item.insertBefore(editActions, actions);
+          item.insertBefore(editMessage, actions);
+          textarea.focus();
+
+          function closeEditMode() {
+            textarea.remove();
+            editActions.remove();
+            editMessage.remove();
+            body.hidden = false;
+            actions.hidden = false;
+          }
+
+          cancelBtn.addEventListener("click", closeEditMode);
+
+          saveBtn.addEventListener("click", async () => {
+            const newContent = textarea.value.trim();
+            if (!newContent) {
+              editMessage.textContent = "내용을 입력하세요";
+              editMessage.hidden = false;
+              return;
+            }
+
+            editMessage.hidden = true;
+            saveBtn.disabled = true;
+
+            const { error } = await supabase
+              .from("comments")
+              .update({ content: newContent })
+              .eq("id", comment.id);
+
+            saveBtn.disabled = false;
+
+            if (error) {
+              console.error(error);
+              editMessage.textContent = "댓글 수정에 실패했습니다";
+              editMessage.hidden = false;
+              return;
+            }
+
+            comment.content = newContent;
+            body.textContent = newContent;
+            closeEditMode();
+          });
+        });
       }
 
       listEl.appendChild(item);
