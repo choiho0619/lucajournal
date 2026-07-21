@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>루카저널 — 말씀과 역사, 그리고 오늘의 시선</title>
+<title>루카저널 — 굿즈샵</title>
 <!-- Favicon & Manifest -->
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/favicon-32.png">
@@ -12,15 +12,17 @@
 <link rel="manifest" href="/site.webmanifest">
 <meta name="theme-color" content="#854F0B">
 <!-- Open Graph & SEO -->
+<meta name="description" content="루카저널의 말씀 캘리그라피를 담은 굿즈샵. 실물 상품과 디지털 다운로드를 만나보세요.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="루카저널">
-<meta property="og:title" content="루카저널 구독 확인">
-<meta property="og:url" content="https://lucajournal.com/confirm.html">
+<meta property="og:title" content="루카저널 — 굿즈샵">
+<meta property="og:description" content="루카저널의 말씀 캘리그라피를 담은 굿즈샵. 실물 상품과 디지털 다운로드를 만나보세요.">
+<meta property="og:url" content="https://lucajournal.com/shop.html">
 <meta property="og:image" content="https://lucajournal.com/assets/og-default.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="robots" content="noindex, nofollow">
+<link rel="canonical" href="https://lucajournal.com/shop.html">
 <template id="__bundler_thumbnail" data-bg-color="#f3f2f2">
   <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
     <rect width="120" height="120" fill="#f3f2f2"/>
@@ -128,7 +130,29 @@ a:hover{color:var(--color-accent);text-decoration:underline;}
   color:var(--color-accent-700);font-weight:600;margin:0 0 14px;}
 .headline{font-weight:600;letter-spacing:-.01em;margin:0;}
 .sub{font-size:16.5px;line-height:1.7;color:color-mix(in srgb, var(--color-text) 76%, transparent);
-  max-width:56ch;margin:16px 0 0;word-break:keep-all;}
+  max-width:56ch;margin:16px 0 0;}
+
+/* — shop gallery — */
+.shop-tabs{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 28px;}
+.shop-tab{font-size:13.5px;padding:8px 16px;border:1px solid var(--color-divider);border-radius:999px;
+  background:transparent;color:var(--color-text);cursor:pointer;font-family:inherit;}
+.shop-tab:hover{background:color-mix(in srgb, var(--color-text) 7%, transparent);}
+.shop-tab.active{background:var(--color-accent);border-color:var(--color-accent);color:var(--color-bg);}
+.shop-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;}
+.shop-card{border:1px solid var(--color-divider);border-radius:var(--radius-md);overflow:hidden;
+  display:flex;flex-direction:column;background:transparent;}
+.shop-card-image{width:100%;aspect-ratio:1/1;background:var(--color-neutral-200, #e8e4dd);
+  overflow:hidden;}
+.shop-card-image img{width:100%;height:100%;object-fit:cover;display:block;}
+.shop-card-body{padding:20px;display:flex;flex-direction:column;gap:8px;flex:1;}
+.shop-badge{display:inline-flex;align-items:center;width:fit-content;font-size:11.5px;
+  letter-spacing:.04em;padding:4px 10px;border-radius:999px;}
+.shop-badge-physical{background:var(--color-accent-100);color:var(--color-accent-700);}
+.shop-badge-digital{background:var(--color-neutral-200);color:var(--color-neutral-800);}
+.shop-card-name{font-size:16px;font-weight:600;margin:0;}
+.shop-card-price{font-size:14px;color:color-mix(in srgb, var(--color-text) 76%, transparent);margin:0;}
+.shop-card-actions{margin-top:auto;padding-top:4px;}
+.shop-empty{font-size:14.5px;padding:8px 0;color:color-mix(in srgb, var(--color-text) 60%, transparent);}
 
 footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
   color:color-mix(in srgb, var(--color-text) 60%, transparent);
@@ -163,12 +187,22 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 <hr class="rule">
 
   <div class="wrap">
-    <section style="padding:64px 0 64px;max-width:72ch;">
-      <div id="confirm-result">
-        <h1 class="headline" style="font-size:clamp(26px,3vw,34px);margin:0 0 8px;">구독 확인</h1>
-        <p class="sub" id="confirm-message">확인 중입니다...</p>
+    <section style="padding:56px 0 20px;max-width:72ch;">
+      <span class="eyebrow">SHOP</span>
+      <h1 class="headline" style="font-size:clamp(26px,3vw,34px);margin:0 0 8px;">굿즈샵</h1>
+      <p class="sub">루카저널의 말씀 캘리그라피를 담은 손끝의 결과물입니다.</p>
+    </section>
+  </div>
+  <hr class="rule">
+
+  <div class="wrap">
+    <section style="padding:40px 0 64px;">
+      <div class="shop-tabs" role="tablist">
+        <button type="button" class="shop-tab active" data-filter="all">전체</button>
+        <button type="button" class="shop-tab" data-filter="physical">실물 상품</button>
+        <button type="button" class="shop-tab" data-filter="digital">디지털 다운로드</button>
       </div>
-      <p style="margin-top:32px;"><a href="index.html" class="btn btn-secondary">홈으로</a></p>
+      <div class="shop-grid" id="shop-grid"></div>
     </section>
   </div>
   </main>
@@ -181,21 +215,87 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 
 <script type="module" src="./auth-ui.js"></script>
 <script type="module">
-  import { confirmSubscription } from "./subscribe.js";
+  import { PRODUCTS } from "./shop-products.js";
 
-  document.addEventListener("DOMContentLoaded", async () => {
-    const messageEl = document.getElementById("confirm-message");
-    const token = new URLSearchParams(window.location.search).get("token");
+  const TYPE_LABEL = { physical: "실물 배송", digital: "디지털 다운로드" };
 
-    const result = await confirmSubscription(token);
+  function renderProducts(products) {
+    const grid = document.getElementById("shop-grid");
+    grid.innerHTML = "";
 
-    if (result.error) {
-      messageEl.textContent = "유효하지 않거나 만료된 확인 링크입니다.";
+    if (products.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "shop-empty";
+      empty.textContent = "해당 유형의 상품이 아직 없습니다";
+      grid.appendChild(empty);
       return;
     }
 
-    messageEl.textContent = `구독이 확인되었습니다. ${result.email}로 매일 정오에 새 글을 보내드립니다.`;
-    localStorage.setItem("lj_subscribed", "1");
+    for (const p of products) {
+      const card = document.createElement("div");
+      card.className = "shop-card";
+      card.dataset.type = p.type;
+
+      const imgWrap = document.createElement("div");
+      imgWrap.className = "shop-card-image";
+      const img = document.createElement("img");
+      img.src = p.image;
+      img.alt = p.name;
+      img.loading = "lazy";
+      img.addEventListener("error", () => { img.style.display = "none"; });
+      imgWrap.appendChild(img);
+      card.appendChild(imgWrap);
+
+      const body = document.createElement("div");
+      body.className = "shop-card-body";
+
+      const badge = document.createElement("span");
+      badge.className = `shop-badge shop-badge-${p.type}`;
+      badge.textContent = TYPE_LABEL[p.type] || p.type;
+      body.appendChild(badge);
+
+      const name = document.createElement("h3");
+      name.className = "shop-card-name";
+      name.textContent = p.name;
+      body.appendChild(name);
+
+      const price = document.createElement("p");
+      price.className = "shop-card-price";
+      price.textContent = p.price || "스마트스토어에서 확인";
+      body.appendChild(price);
+
+      const actions = document.createElement("div");
+      actions.className = "shop-card-actions";
+      const buyBtn = document.createElement("a");
+      buyBtn.className = "btn btn-primary";
+      buyBtn.href = p.storeUrl;
+      buyBtn.target = "_blank";
+      buyBtn.rel = "noopener noreferrer";
+      buyBtn.textContent = "구매하기";
+      actions.appendChild(buyBtn);
+      body.appendChild(actions);
+
+      card.appendChild(body);
+      grid.appendChild(card);
+    }
+  }
+
+  function setupFilters(products) {
+    const tabs = document.querySelectorAll(".shop-tab");
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        tabs.forEach((t) => t.classList.remove("active"));
+        tab.classList.add("active");
+        const type = tab.dataset.filter;
+        const filtered = type === "all" ? products : products.filter((p) => p.type === type);
+        renderProducts(filtered);
+      });
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    renderProducts(PRODUCTS);
+    setupFilters(PRODUCTS);
   });
 </script>
 <script>
