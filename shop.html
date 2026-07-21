@@ -143,7 +143,7 @@ a:hover{color:var(--color-accent);text-decoration:underline;}
   display:flex;flex-direction:column;background:transparent;}
 .shop-card-image{width:100%;aspect-ratio:1/1;background:var(--color-neutral-200, #e8e4dd);
   overflow:hidden;}
-.shop-card-image img{width:100%;height:100%;object-fit:cover;display:block;}
+.shop-card-image img{width:100%;height:100%;object-fit:contain;display:block;}
 .shop-card-body{padding:20px;display:flex;flex-direction:column;gap:8px;flex:1;}
 .shop-badge{display:inline-flex;align-items:center;width:fit-content;font-size:11.5px;
   letter-spacing:.04em;padding:4px 10px;border-radius:999px;}
@@ -153,6 +153,10 @@ a:hover{color:var(--color-accent);text-decoration:underline;}
 .shop-card-price{font-size:14px;color:color-mix(in srgb, var(--color-text) 76%, transparent);margin:0;}
 .shop-card-actions{margin-top:auto;padding-top:4px;}
 .shop-empty{font-size:14.5px;padding:8px 0;color:color-mix(in srgb, var(--color-text) 60%, transparent);}
+
+/* .shop-tabs carries display:flex, which would win the cascade over the bare [hidden] UA rule
+   when hidden is toggled directly on it — force it explicitly (same trap as post.html back-to-list). */
+[hidden]{display:none !important;}
 
 footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
   color:color-mix(in srgb, var(--color-text) 60%, transparent);
@@ -197,11 +201,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 
   <div class="wrap">
     <section style="padding:40px 0 64px;">
-      <div class="shop-tabs" role="tablist">
-        <button type="button" class="shop-tab active" data-filter="all">전체</button>
-        <button type="button" class="shop-tab" data-filter="physical">실물 상품</button>
-        <button type="button" class="shop-tab" data-filter="digital">디지털 다운로드</button>
-      </div>
+      <div class="shop-tabs" id="shop-tabs" role="tablist" hidden></div>
       <div class="shop-grid" id="shop-grid"></div>
     </section>
   </div>
@@ -217,9 +217,14 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 <script type="module">
   import { PRODUCTS } from "./shop-products.js";
 
-  const TYPE_LABEL = { physical: "실물 배송", digital: "디지털 다운로드" };
+  const TYPE_LABEL_BADGE = { physical: "실물 배송", digital: "디지털 다운로드" };
+  const TYPE_LABEL_TAB = { physical: "실물 상품", digital: "디지털 다운로드" };
 
-  function renderProducts(products) {
+  function getDistinctTypes(products) {
+    return [...new Set(products.map((p) => p.type))];
+  }
+
+  function renderProducts(products, { showBadge }) {
     const grid = document.getElementById("shop-grid");
     grid.innerHTML = "";
 
@@ -249,10 +254,12 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
       const body = document.createElement("div");
       body.className = "shop-card-body";
 
-      const badge = document.createElement("span");
-      badge.className = `shop-badge shop-badge-${p.type}`;
-      badge.textContent = TYPE_LABEL[p.type] || p.type;
-      body.appendChild(badge);
+      if (showBadge) {
+        const badge = document.createElement("span");
+        badge.className = `shop-badge shop-badge-${p.type}`;
+        badge.textContent = TYPE_LABEL_BADGE[p.type] || p.type;
+        body.appendChild(badge);
+      }
 
       const name = document.createElement("h3");
       name.className = "shop-card-name";
@@ -261,18 +268,29 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 
       const price = document.createElement("p");
       price.className = "shop-card-price";
-      price.textContent = p.price || "스마트스토어에서 확인";
+      price.textContent = (p.price && p.price !== "TBD") ? p.price : "스마트스토어에서 확인";
       body.appendChild(price);
 
       const actions = document.createElement("div");
       actions.className = "shop-card-actions";
-      const buyBtn = document.createElement("a");
-      buyBtn.className = "btn btn-primary";
-      buyBtn.href = p.storeUrl;
-      buyBtn.target = "_blank";
-      buyBtn.rel = "noopener noreferrer";
-      buyBtn.textContent = "구매하기";
-      actions.appendChild(buyBtn);
+
+      const isReady = !!p.price && p.price !== "TBD" && !!p.storeUrl && p.storeUrl !== "TBD";
+      if (isReady) {
+        const buyBtn = document.createElement("a");
+        buyBtn.className = "btn btn-primary";
+        buyBtn.href = p.storeUrl;
+        buyBtn.target = "_blank";
+        buyBtn.rel = "noopener noreferrer";
+        buyBtn.textContent = "구매하기";
+        actions.appendChild(buyBtn);
+      } else {
+        const buyBtn = document.createElement("button");
+        buyBtn.type = "button";
+        buyBtn.className = "btn btn-secondary";
+        buyBtn.disabled = true;
+        buyBtn.textContent = "준비 중";
+        actions.appendChild(buyBtn);
+      }
       body.appendChild(actions);
 
       card.appendChild(body);
@@ -281,20 +299,48 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
   }
 
   function setupFilters(products) {
-    const tabs = document.querySelectorAll(".shop-tab");
+    const tabsEl = document.getElementById("shop-tabs");
+    const types = getDistinctTypes(products);
+
+    if (types.length < 2) {
+      tabsEl.hidden = true;
+      return;
+    }
+
+    tabsEl.hidden = false;
+    tabsEl.innerHTML = "";
+
+    const allBtn = document.createElement("button");
+    allBtn.type = "button";
+    allBtn.className = "shop-tab active";
+    allBtn.dataset.filter = "all";
+    allBtn.textContent = "전체";
+    tabsEl.appendChild(allBtn);
+
+    for (const type of types) {
+      const tabBtn = document.createElement("button");
+      tabBtn.type = "button";
+      tabBtn.className = "shop-tab";
+      tabBtn.dataset.filter = type;
+      tabBtn.textContent = TYPE_LABEL_TAB[type] || type;
+      tabsEl.appendChild(tabBtn);
+    }
+
+    const tabs = tabsEl.querySelectorAll(".shop-tab");
     tabs.forEach((tab) => {
       tab.addEventListener("click", () => {
         tabs.forEach((t) => t.classList.remove("active"));
         tab.classList.add("active");
         const type = tab.dataset.filter;
         const filtered = type === "all" ? products : products.filter((p) => p.type === type);
-        renderProducts(filtered);
+        renderProducts(filtered, { showBadge: types.length >= 2 });
       });
     });
   }
 
   document.addEventListener("DOMContentLoaded", () => {
-    renderProducts(PRODUCTS);
+    const types = getDistinctTypes(PRODUCTS);
+    renderProducts(PRODUCTS, { showBadge: types.length >= 2 });
     setupFilters(PRODUCTS);
   });
 </script>
