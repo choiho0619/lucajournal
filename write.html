@@ -99,14 +99,27 @@ a:hover{color:var(--color-accent);text-decoration:underline;}
 .nav-links{display:flex;gap:28px;align-items:center;list-style:none;margin:0;padding:0;}
 .nav-links a{font-size:14.5px;color:#201f1d;}
 .nav-links a:hover{color:var(--color-accent-700);}
+.nav-actions{display:flex;align-items:center;gap:12px;}
+.nav-toggle{display:none;flex-direction:column;justify-content:center;align-items:center;gap:5px;
+  width:36px;height:36px;border:none;background:transparent;padding:0;cursor:pointer;flex:none;}
+.nav-toggle-bar{display:block;width:22px;height:2px;background:var(--color-text);border-radius:1px;
+  transition:transform .18s ease,opacity .18s ease;}
+.nav-toggle[aria-expanded="true"] .nav-toggle-bar:nth-child(1){transform:translateY(7px) rotate(45deg);}
+.nav-toggle[aria-expanded="true"] .nav-toggle-bar:nth-child(2){opacity:0;}
+.nav-toggle[aria-expanded="true"] .nav-toggle-bar:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
 
 @media (max-width: 640px){
   .brand-name{white-space:nowrap;font-size:17px;}
-  .nav-links{min-width:0;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:thin;}
-  .nav-links li{flex:none;}
-  .nav-links a{white-space:nowrap;}
-  .nav-links::-webkit-scrollbar{height:4px;}
-  .nav-links::-webkit-scrollbar-thumb{background:var(--color-divider);border-radius:2px;}
+  .nav{position:relative;}
+  .nav-toggle{display:flex;}
+  .nav-links{display:none;flex-direction:column;align-items:stretch;gap:0;
+    position:absolute;top:100%;left:0;right:0;margin:0;
+    background:var(--color-bg);border:1px solid var(--color-divider);border-top:none;
+    padding:4px 0;z-index:20;
+    box-shadow:0 8px 20px color-mix(in srgb, var(--color-text) 12%, transparent);}
+  .nav-links.nav-open{display:flex;}
+  .nav-links li{flex:none;width:100%;}
+  .nav-links a{white-space:normal;display:block;padding:12px clamp(20px,5vw,64px);}
   #auth-area{min-width:96px!important;justify-content:flex-end;}
 }
 
@@ -136,7 +149,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 <div>
   <nav class="nav">
     <a class="brand" href="index.html" style="text-decoration:none;color:inherit;"><span class="cross"></span><span class="brand-name">루카저널</span></a>
-    <ul class="nav-links">
+    <ul class="nav-links" id="nav-links">
       <li><a href="category.html?code=DAILY">묵상</a></li>
       <li><a href="category.html?code=PERSPECTIVE">시사</a></li>
       <li><a href="category.html?code=HERITAGE">역사</a></li>
@@ -145,7 +158,14 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
       <li><a href="category.html?code=NOTICE">공지</a></li>
       <li><a href="about.html">소개</a></li>
     </ul>
-    <div id="auth-area" style="display:flex;align-items:center;gap:12px;min-width:140px;"></div>
+    <div class="nav-actions">
+      <div id="auth-area" style="display:flex;align-items:center;gap:12px;min-width:140px;"></div>
+      <button type="button" class="nav-toggle" id="nav-toggle" aria-label="메뉴 열기" aria-expanded="false" aria-controls="nav-links">
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+      </button>
+    </div>
   </nav>
   <main class="page-main">
 <hr class="rule">
@@ -323,6 +343,19 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     }
     gateNoPermission.hidden = false;
   });
+</script>
+<script>
+  (function(){
+    var btn = document.getElementById("nav-toggle");
+    var menu = document.getElementById("nav-links");
+    if (!btn || !menu) return;
+    btn.addEventListener("click", function(){
+      var open = btn.getAttribute("aria-expanded") === "true";
+      btn.setAttribute("aria-expanded", String(!open));
+      btn.setAttribute("aria-label", open ? "메뉴 열기" : "메뉴 닫기");
+      menu.classList.toggle("nav-open", !open);
+    });
+  })();
 </script>
 </body>
 </html>
