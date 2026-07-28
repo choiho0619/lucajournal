@@ -88,6 +88,8 @@ function injectMetadata(html, post, canonicalUrl) {
   const title = String(post.title ?? "").trim();
   const description = createDescription(post.content) || title;
   const authorName = String(post.profiles?.display_name ?? "").trim();
+  const dateModified = post.updated_at || post.published_at;
+  const articleSection = post.categories?.name;
   const escapedTitle = escapeHtml(`${title} | 루카저널`);
 
   let result = html.replace(/<title[^>]*>[\s\S]*?<\/title>/i, `<title>${escapedTitle}</title>`);
@@ -110,6 +112,7 @@ function injectMetadata(html, post, canonicalUrl) {
     description,
     image: [DEFAULT_IMAGE_URL],
     datePublished: post.published_at,
+    url: canonicalUrl,
     mainEntityOfPage: {
       "@type": "WebPage",
       "@id": canonicalUrl,
@@ -120,6 +123,14 @@ function injectMetadata(html, post, canonicalUrl) {
       url: SITE_URL,
     },
   };
+
+  if (dateModified) {
+    jsonLd.dateModified = dateModified;
+  }
+
+  if (articleSection) {
+    jsonLd.articleSection = articleSection;
+  }
 
   if (authorName) {
     jsonLd.author = {
@@ -143,7 +154,7 @@ async function fetchPost(slug, env) {
   const endpoint = new URL("/rest/v1/posts", env.SUPABASE_URL);
   endpoint.searchParams.set(
     "select",
-    "slug,title,content,published_at,categories(name,code),profiles(display_name)",
+    "slug,title,content,published_at,updated_at,categories(name,code),profiles(display_name)",
   );
   endpoint.searchParams.set("slug", `eq.${slug}`);
   endpoint.searchParams.set("status", "eq.published");
