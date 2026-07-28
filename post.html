@@ -17,7 +17,7 @@
 <meta property="og:site_name" content="루카저널">
 <meta property="og:title" content="루카저널">
 <meta property="og:description" content="복음의 눈으로 세상을 읽다 — 루카저널.">
-<meta property="og:url" content="https://lucajournal.com/post.html">
+<meta property="og:url" content="https://lucajournal.com/post">
 <meta property="og:image" content="https://lucajournal.com/assets/og-default.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -198,16 +198,16 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 
 <div>
   <nav class="nav">
-    <a class="brand" href="index.html" style="text-decoration:none;color:inherit;"><span class="cross"></span><span class="brand-name">루카저널</span></a>
+    <a class="brand" href="/" style="text-decoration:none;color:inherit;"><span class="cross"></span><span class="brand-name">루카저널</span></a>
     <ul class="nav-links" id="nav-links">
-      <li><a href="category.html?code=DAILY">묵상</a></li>
-      <li><a href="category.html?code=PERSPECTIVE">시사</a></li>
-      <li><a href="category.html?code=HERITAGE">역사</a></li>
-      <li><a href="category.html?code=APOLOGETICS">변증</a></li>
-      <li><a href="category.html?code=CULTURE">문화</a></li>
-      <li><a href="category.html?code=NOTICE">공지</a></li>
-      <li><a href="about.html">소개</a></li>
-      <li><a href="shop.html">굿즈샵</a></li>
+      <li><a href="/category?code=DAILY">묵상</a></li>
+      <li><a href="/category?code=PERSPECTIVE">시사</a></li>
+      <li><a href="/category?code=HERITAGE">역사</a></li>
+      <li><a href="/category?code=APOLOGETICS">변증</a></li>
+      <li><a href="/category?code=CULTURE">문화</a></li>
+      <li><a href="/category?code=NOTICE">공지</a></li>
+      <li><a href="/about">소개</a></li>
+      <li><a href="/shop">굿즈샵</a></li>
     </ul>
     <div class="nav-actions">
       <div id="auth-area" style="display:flex;align-items:center;gap:12px;min-width:140px;"></div>
@@ -231,7 +231,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
         <div class="skeleton skeleton-body-line"></div>
         <div class="skeleton skeleton-body-line" style="width:60%;"></div>
       </div>
-      <p style="margin-top:40px;" id="back-to-list-para" hidden><a href="index.html" class="btn btn-secondary" id="back-to-list">목록으로</a></p>
+      <p style="margin-top:40px;" id="back-to-list-para" hidden><a href="/" class="btn btn-secondary" id="back-to-list">목록으로</a></p>
     </article>
 
     <section class="comments-section" id="comments-section" hidden>
@@ -251,7 +251,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 
   <footer class="site-footer">
     <span>© 2026 Luca Journal. All rights reserved.</span>
-    <span style="display:flex;gap:16px;flex-wrap:wrap;"><a href="terms.html">이용약관</a><a href="privacy.html">개인정보처리방침</a></span>
+    <span style="display:flex;gap:16px;flex-wrap:wrap;"><a href="/terms">이용약관</a><a href="/privacy">개인정보처리방침</a></span>
   </footer>
 </div>
 
@@ -749,7 +749,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 
     const backToList = document.getElementById("back-to-list");
     if (post.categories?.code) {
-      backToList.href = `category.html?code=${encodeURIComponent(post.categories.code)}`;
+      backToList.href = `/category?code=${encodeURIComponent(post.categories.code)}`;
     }
 
     // 클라이언트 측 권한 체크는 UX 안내용일 뿐이며, 실제 접근 제어는 DB의 RLS 정책(posts_update_own 등)이 담당한다.
@@ -759,7 +759,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
       editLink.className = "btn btn-secondary";
       editLink.id = "edit-post-btn";
       editLink.style.marginLeft = "12px";
-      editLink.href = `write.html?edit=${encodeURIComponent(post.id)}`;
+      editLink.href = `/write?edit=${encodeURIComponent(post.id)}`;
       editLink.textContent = "수정";
       backToList.after(editLink);
 

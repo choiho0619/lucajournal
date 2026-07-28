@@ -49,7 +49,7 @@ export function renderRecentPosts(posts, containerId = "recent-posts-list", empt
 
     const titleLink = document.createElement("a");
     titleLink.className = "post-title";
-    titleLink.href = `post.html?slug=${encodeURIComponent(post.slug)}`;
+    titleLink.href = `/post?slug=${encodeURIComponent(post.slug)}`;
     titleLink.textContent = post.title;
 
     left.appendChild(tag);

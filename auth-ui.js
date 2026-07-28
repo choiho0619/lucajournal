@@ -16,7 +16,7 @@ function renderLoggedIn(name) {
   authArea.innerHTML = "";
 
   const nameEl = document.createElement("a");
-  nameEl.href = "mypage.html";
+  nameEl.href = "/mypage";
   nameEl.className = "nav-links";
   nameEl.style.fontSize = "14.5px";
   nameEl.style.color = "#201f1d";
