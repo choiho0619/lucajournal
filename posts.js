@@ -68,7 +68,7 @@ export function renderRecentPosts(posts, containerId = "recent-posts-list", empt
 export async function fetchPostBySlug(slug) {
   const { data, error } = await supabase
     .from("posts")
-    .select("id, author_id, slug, title, content, published_at, categories(name, code), profiles(display_name)")
+    .select("id, author_id, slug, title, content, published_at, audio_url, categories(name, code), profiles(display_name)")
     .eq("slug", slug)
     .eq("status", "published")
     .single();

@@ -131,6 +131,9 @@ a:hover{color:var(--color-accent);text-decoration:underline;}
 .sub{font-size:16.5px;line-height:1.7;color:color-mix(in srgb, var(--color-text) 76%, transparent);
   max-width:56ch;margin:16px 0 0;}
 
+/* — post detail audio player — */
+.post-audio{display:block;width:100%;max-width:100%;margin:20px 0;}
+
 /* — post detail body copy — */
 .post-body p{font-size:16px;line-height:1.85;margin:0 0 20px;
   color:color-mix(in srgb, var(--color-text) 88%, transparent);
@@ -288,6 +291,15 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     const date = formatDate(post.published_at);
     meta.textContent = author ? `${author} · ${date}` : date;
     container.appendChild(meta);
+
+    if (post.audio_url) {
+      const audio = document.createElement("audio");
+      audio.className = "post-audio";
+      audio.controls = true;
+      audio.preload = "metadata";
+      audio.src = post.audio_url;
+      container.appendChild(audio);
+    }
 
     const body = document.createElement("div");
     body.className = "post-body";
