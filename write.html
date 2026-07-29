@@ -243,6 +243,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
   const initialCode = new URLSearchParams(window.location.search).get("code");
   const editId = new URLSearchParams(window.location.search).get("edit");
   let editCode = null;
+  let audioUrl = null;
 
   document.getElementById("gate-login-btn").addEventListener("click", () => signInWithGoogle());
 
@@ -281,6 +282,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
           title: titleInput.value,
           content: contentTextarea.value,
           status,
+          audioUrl,
         });
 
     if (result.error) {
@@ -361,6 +363,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
       return;
     }
 
+    audioUrl = result.data.publicUrl;
     showAudioMessage(`업로드 완료: ${result.data.publicUrl}`, false);
     audioPreview.src = result.data.publicUrl;
     audioPreview.hidden = false;

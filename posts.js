@@ -150,7 +150,7 @@ export function generateSlug(dateObj) {
   return `${yyyy}-${mm}-${dd}-${random}`;
 }
 
-export async function createPost({ categoryId, title, content, status }) {
+export async function createPost({ categoryId, title, content, status, audioUrl }) {
   if (!title?.trim() || !content?.trim()) {
     return { error: "제목과 본문을 입력해주세요" };
   }
@@ -171,6 +171,7 @@ export async function createPost({ categoryId, title, content, status }) {
       slug: generateSlug(new Date()),
       status,
       published_at: status === "published" ? new Date().toISOString() : null,
+      audio_url: audioUrl ?? null,
     })
     .select()
     .single();
