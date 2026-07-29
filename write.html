@@ -270,6 +270,15 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 
   async function submit(status) {
     formMessage.hidden = true;
+    console.log("[진단] publish 직전 audioUrl:", audioUrl);
+    const createPayload = {
+      categoryId: categorySelect.value,
+      title: titleInput.value,
+      content: contentTextarea.value,
+      status,
+      audioUrl,
+    };
+    console.log("[진단] createPost에 전달되는 값:", createPayload);
     const result = editId
       ? await updatePost({
           id: editId,
@@ -277,13 +286,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
           title: titleInput.value,
           content: contentTextarea.value,
         })
-      : await createPost({
-          categoryId: categorySelect.value,
-          title: titleInput.value,
-          content: contentTextarea.value,
-          status,
-          audioUrl,
-        });
+      : await createPost(createPayload);
 
     if (result.error) {
       showMessage(result.error, true);

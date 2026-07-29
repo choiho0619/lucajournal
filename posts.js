@@ -160,25 +160,29 @@ export async function createPost({ categoryId, title, content, status, audioUrl 
     return { error: "로그인이 필요합니다" };
   }
 
+  const insertPayload = {
+    category_id: categoryId,
+    author_id: user.id,
+    title,
+    content,
+    excerpt: content.slice(0, 80),
+    slug: generateSlug(new Date()),
+    status,
+    published_at: status === "published" ? new Date().toISOString() : null,
+    audio_url: audioUrl ?? null,
+  };
+  console.log("[진단] posts.insert 실제 payload:", insertPayload);
+
   const { data, error } = await supabase
     .from("posts")
-    .insert({
-      category_id: categoryId,
-      author_id: user.id,
-      title,
-      content,
-      excerpt: content.slice(0, 80),
-      slug: generateSlug(new Date()),
-      status,
-      published_at: status === "published" ? new Date().toISOString() : null,
-      audio_url: audioUrl ?? null,
-    })
+    .insert(insertPayload)
     .select()
     .single();
 
   if (error) {
     return { error: error.message };
   }
+  console.log("[진단] insert 결과 data.audio_url:", data?.audio_url);
   return { data };
 }
 
