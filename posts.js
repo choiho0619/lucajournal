@@ -203,3 +203,54 @@ export async function updatePost({ id, categoryId, title, content }) {
   }
   return { data };
 }
+
+const AUDIO_BUCKET = "audio";
+const MAX_AUDIO_BYTES = 30 * 1024 * 1024;
+const ALLOWED_AUDIO_MIME_TYPES = ["audio/mpeg", "audio/mp3"];
+
+function sanitizeAudioFileName(name) {
+  const base = String(name || "").replace(/\.[^/.]+$/, "");
+  const cleaned = base.replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/^_+|_+$/g, "");
+  return cleaned || "audio";
+}
+
+export async function uploadPostAudio(file) {
+  if (!file) {
+    return { error: "파일을 선택해주세요" };
+  }
+
+  const hasAllowedMime = ALLOWED_AUDIO_MIME_TYPES.includes(file.type);
+  const hasMp3Extension = /\.mp3$/i.test(file.name || "");
+  if (!hasAllowedMime || !hasMp3Extension) {
+    return { error: "MP3 파일만 업로드할 수 있습니다" };
+  }
+
+  if (file.size > MAX_AUDIO_BYTES) {
+    return { error: "파일 크기는 30MB를 초과할 수 없습니다" };
+  }
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "로그인이 필요합니다" };
+  }
+
+  // 클라이언트 측 role 체크는 UX 안내용일 뿐이며, 실제 접근 제어는 Storage RLS 정책이 담당한다.
+  const role = await fetchMyRole();
+  if (role !== "writer" && role !== "admin") {
+    return { error: "업로드 권한이 없습니다" };
+  }
+
+  const path = `posts/${user.id}/${crypto.randomUUID()}-${sanitizeAudioFileName(file.name)}.mp3`;
+
+  const { error: uploadError } = await supabase.storage
+    .from(AUDIO_BUCKET)
+    .upload(path, file, { upsert: false, contentType: "audio/mpeg" });
+
+  if (uploadError) {
+    console.error(uploadError);
+    return { error: "업로드 중 오류가 발생했습니다: " + uploadError.message };
+  }
+
+  const { data: publicUrlData } = supabase.storage.from(AUDIO_BUCKET).getPublicUrl(path);
+  return { data: { path, publicUrl: publicUrlData.publicUrl } };
+}

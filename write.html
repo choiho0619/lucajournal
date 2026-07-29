@@ -198,6 +198,15 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
           <label for="post-content">본문</label>
           <textarea id="post-content" required></textarea>
         </div>
+        <div class="field">
+          <label for="post-audio">오디오 (MP3, 선택)</label>
+          <input id="post-audio" type="file" accept=".mp3,audio/mpeg" />
+          <div class="form-actions" style="margin-top:8px;">
+            <button type="button" id="audio-upload-btn" class="btn btn-secondary">오디오 업로드</button>
+          </div>
+          <p id="audio-message" class="form-message" hidden></p>
+          <audio id="audio-preview" controls hidden style="width:100%;margin-top:12px;"></audio>
+        </div>
         <div class="form-actions">
           <button type="button" id="save-draft-btn" class="btn btn-secondary">임시저장</button>
           <button type="button" id="publish-btn" class="btn btn-primary">발행하기</button>
@@ -218,7 +227,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 <script type="module" src="./auth-ui.js"></script>
 <script type="module">
   import { supabase, signInWithGoogle } from "./auth.js";
-  import { fetchMyRole, fetchActiveCategories, createPost, fetchPostById, updatePost } from "./posts.js";
+  import { fetchMyRole, fetchActiveCategories, createPost, fetchPostById, updatePost, uploadPostAudio } from "./posts.js";
 
   const gateLogin = document.getElementById("gate-login");
   const gateNoPermission = document.getElementById("gate-no-permission");
@@ -318,6 +327,44 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     saveDraftBtn.hidden = true;
     publishBtn.textContent = "수정 저장";
   }
+
+  const audioInput = document.getElementById("post-audio");
+  const audioUploadBtn = document.getElementById("audio-upload-btn");
+  const audioMessage = document.getElementById("audio-message");
+  const audioPreview = document.getElementById("audio-preview");
+
+  function showAudioMessage(text, isError) {
+    audioMessage.textContent = text;
+    audioMessage.style.color = isError ? "#b3261e" : "";
+    audioMessage.hidden = false;
+  }
+
+  audioUploadBtn.addEventListener("click", async () => {
+    const file = audioInput.files && audioInput.files[0];
+    if (!file) {
+      showAudioMessage("파일을 선택해주세요", true);
+      return;
+    }
+
+    audioMessage.hidden = true;
+    audioPreview.hidden = true;
+    audioUploadBtn.disabled = true;
+    audioUploadBtn.textContent = "업로드 중...";
+
+    const result = await uploadPostAudio(file);
+
+    audioUploadBtn.disabled = false;
+    audioUploadBtn.textContent = "오디오 업로드";
+
+    if (result.error) {
+      showAudioMessage(result.error, true);
+      return;
+    }
+
+    showAudioMessage(`업로드 완료: ${result.data.publicUrl}`, false);
+    audioPreview.src = result.data.publicUrl;
+    audioPreview.hidden = false;
+  });
 
   document.getElementById("save-draft-btn").addEventListener("click", () => submit("draft"));
   document.getElementById("publish-btn").addEventListener("click", () => submit("published"));
