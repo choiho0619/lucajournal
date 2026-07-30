@@ -154,7 +154,7 @@ async function fetchPost(slug, env) {
   const endpoint = new URL("/rest/v1/posts", env.SUPABASE_URL);
   endpoint.searchParams.set(
     "select",
-    "slug,title,content,published_at,updated_at,categories(name,code),profiles(display_name)",
+    "slug,title,content,published_at,updated_at,audio_title,audio_artist,categories(name,code),profiles(display_name)",
   );
   endpoint.searchParams.set("slug", `eq.${slug}`);
   endpoint.searchParams.set("status", "eq.published");

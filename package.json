@@ -1,0 +1,13 @@
+{
+  "name": "lucajournal",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler pages dev . --compatibility-date=2026-07-29"
+  },
+  "devDependencies": {
+    "wrangler": "^4.115.0"
+  },
+  "dependencies": {
+    "jsmediatags": "^3.9.7"
+  }
+}

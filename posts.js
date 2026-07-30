@@ -68,7 +68,7 @@ export function renderRecentPosts(posts, containerId = "recent-posts-list", empt
 export async function fetchPostBySlug(slug) {
   const { data, error } = await supabase
     .from("posts")
-    .select("id, author_id, slug, title, content, published_at, audio_url, categories(name, code), profiles(display_name)")
+    .select("id, author_id, slug, title, content, published_at, audio_url, audio_title, audio_artist, categories(name, code), profiles(display_name)")
     .eq("slug", slug)
     .eq("status", "published")
     .single();
@@ -82,7 +82,7 @@ export async function fetchPostBySlug(slug) {
 export async function fetchPostById(id) {
   const { data, error } = await supabase
     .from("posts")
-    .select("id, author_id, category_id, title, content, status, categories(code)")
+    .select("id, author_id, category_id, title, content, status, audio_url, audio_title, audio_artist, categories(code)")
     .eq("id", id)
     .single();
 
@@ -150,7 +150,7 @@ export function generateSlug(dateObj) {
   return `${yyyy}-${mm}-${dd}-${random}`;
 }
 
-export async function createPost({ categoryId, title, content, status, audioUrl }) {
+export async function createPost({ categoryId, title, content, status, audioUrl, audioTitle, audioArtist }) {
   if (!title?.trim() || !content?.trim()) {
     return { error: "제목과 본문을 입력해주세요" };
   }
@@ -170,6 +170,8 @@ export async function createPost({ categoryId, title, content, status, audioUrl 
     status,
     published_at: status === "published" ? new Date().toISOString() : null,
     audio_url: audioUrl ?? null,
+    audio_title: audioTitle ?? null,
+    audio_artist: audioArtist ?? null,
   };
   console.log("[진단] posts.insert 실제 payload:", insertPayload);
 
@@ -186,19 +188,31 @@ export async function createPost({ categoryId, title, content, status, audioUrl 
   return { data };
 }
 
-export async function updatePost({ id, categoryId, title, content }) {
+export async function updatePost({ id, categoryId, title, content, audioUrl, audioTitle, audioArtist }) {
   if (!title?.trim() || !content?.trim()) {
     return { error: "제목과 본문을 입력해주세요" };
   }
 
+  const updatePayload = {
+    category_id: categoryId,
+    title,
+    content,
+    excerpt: content.slice(0, 80),
+  };
+  // audioUrl/audioTitle/audioArtist: undefined면 기존 값 유지(키 자체를 보내지 않음), null이면 제거, 문자열이면 교체
+  if (audioUrl !== undefined) {
+    updatePayload.audio_url = audioUrl;
+  }
+  if (audioTitle !== undefined) {
+    updatePayload.audio_title = audioTitle;
+  }
+  if (audioArtist !== undefined) {
+    updatePayload.audio_artist = audioArtist;
+  }
+
   const { data, error } = await supabase
     .from("posts")
-    .update({
-      category_id: categoryId,
-      title,
-      content,
-      excerpt: content.slice(0, 80),
-    })
+    .update(updatePayload)
     .eq("id", id)
     .select()
     .single();

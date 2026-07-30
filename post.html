@@ -131,8 +131,13 @@ a:hover{color:var(--color-accent);text-decoration:underline;}
 .sub{font-size:16.5px;line-height:1.7;color:color-mix(in srgb, var(--color-text) 76%, transparent);
   max-width:56ch;margin:16px 0 0;}
 
-/* — post detail audio player — */
-.post-audio{display:block;width:100%;max-width:100%;margin:20px 0;}
+/* — post detail audio card — */
+.audio-card{box-sizing:border-box;width:100%;max-width:100%;margin:20px 0;padding:20px 24px;
+  border:1px solid var(--color-divider);border-radius:var(--radius-md);}
+.audio-card-title{font-family:var(--font-kr-heading);font-weight:600;font-size:18px;margin:0;}
+.audio-card-artist{font-size:13.5px;margin:4px 0 0;
+  color:color-mix(in srgb, var(--color-text) 60%, transparent);}
+.post-audio{display:block;box-sizing:border-box;width:100%;max-width:100%;margin:16px 0 0;}
 
 /* — post detail body copy — */
 .post-body p{font-size:16px;line-height:1.85;margin:0 0 20px;
@@ -293,12 +298,35 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     container.appendChild(meta);
 
     if (post.audio_url) {
+      const card = document.createElement("div");
+      card.className = "audio-card";
+
+      const label = document.createElement("span");
+      label.className = "eyebrow";
+      label.style.margin = "0 0 10px";
+      label.textContent = "AUDIO JOURNAL";
+      card.appendChild(label);
+
+      const audioTitle = document.createElement("p");
+      audioTitle.className = "audio-card-title";
+      audioTitle.textContent = post.audio_title || "오디오";
+      card.appendChild(audioTitle);
+
+      if (post.audio_artist) {
+        const audioArtist = document.createElement("p");
+        audioArtist.className = "audio-card-artist";
+        audioArtist.textContent = post.audio_artist;
+        card.appendChild(audioArtist);
+      }
+
       const audio = document.createElement("audio");
       audio.className = "post-audio";
       audio.controls = true;
       audio.preload = "metadata";
       audio.src = post.audio_url;
-      container.appendChild(audio);
+      card.appendChild(audio);
+
+      container.appendChild(card);
     }
 
     const body = document.createElement("div");

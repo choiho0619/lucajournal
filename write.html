@@ -202,7 +202,15 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
           <label for="post-audio">오디오 (MP3, 선택)</label>
           <input id="post-audio" type="file" accept=".mp3,audio/mpeg" />
           <div class="form-actions" style="margin-top:8px;">
-            <button type="button" id="audio-upload-btn" class="btn btn-secondary">오디오 업로드</button>
+            <button type="button" id="audio-remove-btn" class="btn btn-secondary" hidden>오디오 제거</button>
+          </div>
+          <div class="field" style="margin:16px 0 0;">
+            <label for="audio-title-input">곡명</label>
+            <input id="audio-title-input" type="text" placeholder="곡명 (선택)" />
+          </div>
+          <div class="field" style="margin:16px 0 0;">
+            <label for="audio-artist-input">아티스트</label>
+            <input id="audio-artist-input" type="text" placeholder="아티스트 (선택)" />
           </div>
           <p id="audio-message" class="form-message" hidden></p>
           <audio id="audio-preview" controls hidden style="width:100%;margin-top:12px;"></audio>
@@ -224,6 +232,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
   </footer>
 </div>
 
+<script src="./vendor/jsmediatags.min.js"></script>
 <script type="module" src="./auth-ui.js"></script>
 <script type="module">
   import { supabase, signInWithGoogle } from "./auth.js";
@@ -243,7 +252,15 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
   const initialCode = new URLSearchParams(window.location.search).get("code");
   const editId = new URLSearchParams(window.location.search).get("edit");
   let editCode = null;
-  let audioUrl = null;
+  // audioUrl/audioTitle/audioArtist: undefined면 기존 값 유지, null이면 제거, 문자열이면 교체 (updatePost와 동일한 3상태)
+  let audioUrl;
+  let audioTitle;
+  let audioArtist;
+  let existingAudioUrl = null; // 수정 화면 진입 시 불러온 기존 값 (표시용)
+  let existingAudioTitle = null;
+  let existingAudioArtist = null;
+  let selectedAudioFile = null; // 선택만 되고 아직 업로드되지 않은 새 MP3. 저장 버튼을 눌렀을 때 업로드된다.
+  let isSaving = false;
 
   document.getElementById("gate-login-btn").addEventListener("click", () => signInWithGoogle());
 
@@ -269,29 +286,68 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
   }
 
   async function submit(status) {
+    if (isSaving) return;
+    isSaving = true;
     formMessage.hidden = true;
-    console.log("[진단] publish 직전 audioUrl:", audioUrl);
-    const createPayload = {
-      categoryId: categorySelect.value,
-      title: titleInput.value,
-      content: contentTextarea.value,
-      status,
-      audioUrl,
-    };
-    console.log("[진단] createPost에 전달되는 값:", createPayload);
+    saveDraftBtn.disabled = true;
+    publishBtn.disabled = true;
+
+    let resolvedAudioUrl = audioUrl;
+    let resolvedAudioTitle = audioTitle;
+    let resolvedAudioArtist = audioArtist;
+
+    // 저장 버튼을 누른 시점에만 실제로 업로드한다: 업로드 성공 전에는 DB에 새 audio_url을 반영하지 않는다.
+    if (selectedAudioFile) {
+      showMessage("오디오 업로드 중…", false);
+      const uploadResult = await uploadPostAudio(selectedAudioFile);
+      if (uploadResult.error) {
+        showMessage("오디오 업로드에 실패했습니다. 다시 시도해 주세요.", true);
+        saveDraftBtn.disabled = false;
+        publishBtn.disabled = false;
+        isSaving = false;
+        return;
+      }
+      resolvedAudioUrl = uploadResult.data.publicUrl;
+      resolvedAudioTitle = audioTitleInput.value.trim() || null;
+      resolvedAudioArtist = audioArtistInput.value.trim() || null;
+    }
+
+    showMessage("게시글 저장 중…", false);
+
     const result = editId
       ? await updatePost({
           id: editId,
           categoryId: categorySelect.value,
           title: titleInput.value,
           content: contentTextarea.value,
+          audioUrl: resolvedAudioUrl,
+          audioTitle: resolvedAudioTitle,
+          audioArtist: resolvedAudioArtist,
         })
-      : await createPost(createPayload);
+      : await createPost({
+          categoryId: categorySelect.value,
+          title: titleInput.value,
+          content: contentTextarea.value,
+          status,
+          audioUrl: resolvedAudioUrl,
+          audioTitle: resolvedAudioTitle,
+          audioArtist: resolvedAudioArtist,
+        });
+
+    saveDraftBtn.disabled = false;
+    publishBtn.disabled = false;
+    isSaving = false;
 
     if (result.error) {
       showMessage(result.error, true);
       return;
     }
+
+    selectedAudioFile = null;
+    audioUrl = resolvedAudioUrl;
+    audioTitle = resolvedAudioTitle;
+    audioArtist = resolvedAudioArtist;
+    updateAudioUI();
 
     if (editId || status === "published") {
       showMessage("저장되었습니다");
@@ -331,12 +387,42 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     headingEl.textContent = "글 수정";
     saveDraftBtn.hidden = true;
     publishBtn.textContent = "수정 저장";
+
+    existingAudioUrl = post.audio_url ?? null;
+    existingAudioTitle = post.audio_title ?? null;
+    existingAudioArtist = post.audio_artist ?? null;
+    audioTitleInput.value = existingAudioTitle || "";
+    audioArtistInput.value = existingAudioArtist || "";
+    updateAudioUI();
   }
 
   const audioInput = document.getElementById("post-audio");
-  const audioUploadBtn = document.getElementById("audio-upload-btn");
+  const audioRemoveBtn = document.getElementById("audio-remove-btn");
+  const audioTitleInput = document.getElementById("audio-title-input");
+  const audioArtistInput = document.getElementById("audio-artist-input");
   const audioMessage = document.getElementById("audio-message");
   const audioPreview = document.getElementById("audio-preview");
+
+  function fileNameWithoutExtension(name) {
+    return String(name || "").replace(/\.[^/.]+$/, "");
+  }
+
+  function readAudioTags(file) {
+    return new Promise((resolve) => {
+      if (!window.jsmediatags) {
+        resolve({ title: "", artist: "" });
+        return;
+      }
+      window.jsmediatags.read(file, {
+        onSuccess: ({ tags }) => {
+          resolve({ title: tags?.title || "", artist: tags?.artist || "" });
+        },
+        onError: () => {
+          resolve({ title: "", artist: "" });
+        },
+      });
+    });
+  }
 
   function showAudioMessage(text, isError) {
     audioMessage.textContent = text;
@@ -344,32 +430,61 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     audioMessage.hidden = false;
   }
 
-  audioUploadBtn.addEventListener("click", async () => {
+  function updateAudioUI() {
+    if (selectedAudioFile) {
+      audioPreview.hidden = true;
+      audioPreview.removeAttribute("src");
+      audioRemoveBtn.hidden = false;
+      showAudioMessage(`선택됨: ${selectedAudioFile.name} (저장 시 업로드됩니다)`, false);
+      return;
+    }
+
+    const effectiveUrl = audioUrl !== undefined ? audioUrl : existingAudioUrl;
+    if (effectiveUrl) {
+      audioPreview.src = effectiveUrl;
+      audioPreview.hidden = false;
+      audioRemoveBtn.hidden = false;
+    } else {
+      audioPreview.hidden = true;
+      audioPreview.removeAttribute("src");
+      audioRemoveBtn.hidden = true;
+    }
+    if (audioUrl === null) {
+      showAudioMessage("오디오가 제거됩니다. 저장 시 반영됩니다", false);
+    }
+  }
+
+  audioRemoveBtn.addEventListener("click", () => {
+    selectedAudioFile = null;
+    audioUrl = null;
+    audioTitle = null;
+    audioArtist = null;
+    audioInput.value = "";
+    audioTitleInput.value = "";
+    audioArtistInput.value = "";
+    updateAudioUI();
+  });
+
+  // 파일 선택 시에는 상태 저장·ID3 추출·입력란 채움만 수행하고, 실제 업로드는 저장 버튼을 누를 때 진행한다.
+  // 메타데이터 추출 실패는 업로드 실패로 처리하지 않음: readAudioTags가 항상 폴백 값으로 resolve됨
+  audioInput.addEventListener("change", async () => {
     const file = audioInput.files && audioInput.files[0];
-    if (!file) {
-      showAudioMessage("파일을 선택해주세요", true);
-      return;
-    }
+    if (!file) return;
 
-    audioMessage.hidden = true;
-    audioPreview.hidden = true;
-    audioUploadBtn.disabled = true;
-    audioUploadBtn.textContent = "업로드 중...";
+    selectedAudioFile = file;
+    updateAudioUI();
 
-    const result = await uploadPostAudio(file);
+    const tags = await readAudioTags(file);
+    audioTitleInput.value = tags.title || fileNameWithoutExtension(file.name);
+    audioArtistInput.value = tags.artist || "";
+  });
 
-    audioUploadBtn.disabled = false;
-    audioUploadBtn.textContent = "오디오 업로드";
+  audioTitleInput.addEventListener("input", () => {
+    audioTitle = audioTitleInput.value.trim() || null;
+  });
 
-    if (result.error) {
-      showAudioMessage(result.error, true);
-      return;
-    }
-
-    audioUrl = result.data.publicUrl;
-    showAudioMessage(`업로드 완료: ${result.data.publicUrl}`, false);
-    audioPreview.src = result.data.publicUrl;
-    audioPreview.hidden = false;
+  audioArtistInput.addEventListener("input", () => {
+    audioArtist = audioArtistInput.value.trim() || null;
   });
 
   document.getElementById("save-draft-btn").addEventListener("click", () => submit("draft"));
