@@ -200,6 +200,13 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
         </div>
         <div class="field">
           <label for="post-audio">오디오 (MP3, 선택)</label>
+          <div id="current-audio-card" hidden style="margin:0 0 16px;padding:12px 14px;border:1px solid var(--color-divider);border-radius:var(--radius-md);">
+            <span class="eyebrow" style="margin:0 0 6px;">현재 오디오</span>
+            <p id="current-audio-title" style="margin:0;font-weight:600;"></p>
+            <p id="current-audio-artist" style="margin:4px 0 0;font-size:13px;color:color-mix(in srgb, var(--color-text) 60%, transparent);" hidden></p>
+            <p style="margin:8px 0 0;font-size:13px;color:color-mix(in srgb, var(--color-text) 60%, transparent);">새 파일을 선택하지 않으면 기존 오디오가 유지됩니다.</p>
+            <audio id="current-audio-preview" controls style="width:100%;margin-top:10px;"></audio>
+          </div>
           <input id="post-audio" type="file" accept=".mp3,audio/mpeg" />
           <div class="form-actions" style="margin-top:8px;">
             <button type="button" id="audio-remove-btn" class="btn btn-secondary" hidden>오디오 제거</button>
@@ -213,7 +220,6 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
             <input id="audio-artist-input" type="text" placeholder="아티스트 (선택)" />
           </div>
           <p id="audio-message" class="form-message" hidden></p>
-          <audio id="audio-preview" controls hidden style="width:100%;margin-top:12px;"></audio>
         </div>
         <div class="form-actions">
           <button type="button" id="save-draft-btn" class="btn btn-secondary">임시저장</button>
@@ -314,8 +320,8 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
         return;
       }
       resolvedAudioUrl = uploadResult.data.publicUrl;
-      resolvedAudioTitle = audioTitleInput.value.trim() || null;
-      resolvedAudioArtist = audioArtistInput.value.trim() || null;
+      resolvedAudioTitle = capturedAudioTitle || fileNameWithoutExtension(fileToUpload.name);
+      resolvedAudioArtist = capturedAudioArtist || null;
     }
 
     showMessage("게시글 저장 중…", false);
@@ -435,7 +441,10 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
   const audioTitleInput = document.getElementById("audio-title-input");
   const audioArtistInput = document.getElementById("audio-artist-input");
   const audioMessage = document.getElementById("audio-message");
-  const audioPreview = document.getElementById("audio-preview");
+  const currentAudioCard = document.getElementById("current-audio-card");
+  const currentAudioTitleEl = document.getElementById("current-audio-title");
+  const currentAudioArtistEl = document.getElementById("current-audio-artist");
+  const currentAudioPreview = document.getElementById("current-audio-preview");
 
   function fileNameWithoutExtension(name) {
     return String(name || "").replace(/\.[^/.]+$/, "");
@@ -466,25 +475,40 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 
   function updateAudioUI() {
     if (selectedAudioFile) {
-      audioPreview.hidden = true;
-      audioPreview.removeAttribute("src");
+      // 새 파일이 선택된 동안에는 현재 오디오 영역을 감추고, 교체될 파일명만 구분해서 보여준다.
+      currentAudioCard.hidden = true;
+      currentAudioPreview.pause();
+      currentAudioPreview.currentTime = 0;
+      currentAudioPreview.removeAttribute("src");
+      currentAudioPreview.load();
       audioRemoveBtn.hidden = false;
-      showAudioMessage(`선택됨: ${selectedAudioFile.name} (저장 시 업로드됩니다)`, false);
+      showAudioMessage(`교체할 파일 선택됨: ${selectedAudioFile.name} (저장 시 업로드됩니다)`, false);
       return;
     }
 
     const effectiveUrl = audioUrl !== undefined ? audioUrl : existingAudioUrl;
     if (effectiveUrl) {
-      audioPreview.src = effectiveUrl;
-      audioPreview.hidden = false;
+      const effectiveTitle = audioUrl !== undefined ? audioTitle : existingAudioTitle;
+      const effectiveArtist = audioUrl !== undefined ? audioArtist : existingAudioArtist;
+      currentAudioCard.hidden = false;
+      currentAudioTitleEl.textContent = effectiveTitle || "오디오";
+      currentAudioArtistEl.hidden = !effectiveArtist;
+      if (effectiveArtist) currentAudioArtistEl.textContent = effectiveArtist;
+      currentAudioPreview.src = effectiveUrl;
       audioRemoveBtn.hidden = false;
     } else {
-      audioPreview.hidden = true;
-      audioPreview.removeAttribute("src");
+      currentAudioCard.hidden = true;
+      currentAudioPreview.pause();
+      currentAudioPreview.currentTime = 0;
+      currentAudioPreview.removeAttribute("src");
+      currentAudioPreview.load();
       audioRemoveBtn.hidden = true;
     }
+
     if (audioUrl === null) {
       showAudioMessage("오디오가 제거됩니다. 저장 시 반영됩니다", false);
+    } else {
+      audioMessage.hidden = true;
     }
   }
 

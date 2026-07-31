@@ -324,6 +324,8 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
       audio.controls = true;
       audio.preload = "metadata";
       audio.src = post.audio_url;
+      // 브라우저 기본 컨트롤 메뉴의 다운로드 항목만 숨기는 UX 조치. 파일 URL 자체는 여전히 공개 접근 가능하므로 보안 조치가 아님.
+      audio.setAttribute("controlsList", "nodownload noremoteplayback");
       card.appendChild(audio);
 
       container.appendChild(card);
