@@ -266,7 +266,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 <script type="module" src="./auth-ui.js"></script>
 <script type="module">
   import { supabase } from "./auth.js";
-  import { fetchPostBySlug, formatDate, fetchMyRole } from "./posts.js";
+  import { fetchPostBySlug, formatDate, fetchMyRole, deletePost } from "./posts.js";
 
   function renderNotFound(container) {
     container.innerHTML = "";
@@ -802,6 +802,33 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
       editLink.href = `/write?edit=${encodeURIComponent(post.id)}`;
       editLink.textContent = "수정";
       backToList.after(editLink);
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.type = "button";
+      deleteBtn.className = "btn btn-secondary";
+      deleteBtn.id = "delete-post-btn";
+      deleteBtn.style.marginLeft = "12px";
+      deleteBtn.textContent = "삭제";
+      deleteBtn.addEventListener("click", async () => {
+        if (!confirm("이 글을 삭제하시겠습니까? 되돌릴 수 없습니다.")) return;
+
+        deleteBtn.disabled = true;
+        const result = await deletePost(post.id, post.audio_url);
+
+        if (result.error) {
+          alert(result.error || "게시글 삭제 중 오류가 발생했습니다");
+          deleteBtn.disabled = false;
+          return;
+        }
+
+        if (result.cleanupError) {
+          console.error("[Storage 정리 실패] 게시글은 삭제되었지만 오디오 파일 정리에 실패했습니다:", result.cleanupError);
+          alert("게시글은 삭제되었지만 오디오 파일 정리에 실패했습니다. 관리자에게 문의해주세요.");
+        }
+
+        window.location.href = backToList.href;
+      });
+      editLink.after(deleteBtn);
 
       if (role === "admin") {
         const unpublishBtn = document.createElement("button");

@@ -236,7 +236,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 <script type="module" src="./auth-ui.js"></script>
 <script type="module">
   import { supabase, signInWithGoogle } from "./auth.js";
-  import { fetchMyRole, fetchActiveCategories, createPost, fetchPostById, updatePost, uploadPostAudio } from "./posts.js";
+  import { fetchMyRole, fetchActiveCategories, createPost, fetchPostById, updatePost, uploadPostAudio, deletePostAudio } from "./posts.js";
 
   const gateLogin = document.getElementById("gate-login");
   const gateNoPermission = document.getElementById("gate-no-permission");
@@ -292,14 +292,20 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     saveDraftBtn.disabled = true;
     publishBtn.disabled = true;
 
+    // 저장 시작 시점의 값을 즉시 지역 변수로 캡처한다. 업로드는 비동기(await)로 진행되므로,
+    // 이후 시점의 DOM 상태가 아니라 저장 버튼을 누른 순간의 값을 그대로 사용해야 한다.
+    const fileToUpload = selectedAudioFile;
+    const capturedAudioTitle = audioTitleInput.value.trim();
+    const capturedAudioArtist = audioArtistInput.value.trim();
+
     let resolvedAudioUrl = audioUrl;
     let resolvedAudioTitle = audioTitle;
     let resolvedAudioArtist = audioArtist;
 
     // 저장 버튼을 누른 시점에만 실제로 업로드한다: 업로드 성공 전에는 DB에 새 audio_url을 반영하지 않는다.
-    if (selectedAudioFile) {
+    if (fileToUpload) {
       showMessage("오디오 업로드 중…", false);
-      const uploadResult = await uploadPostAudio(selectedAudioFile);
+      const uploadResult = await uploadPostAudio(fileToUpload);
       if (uploadResult.error) {
         showMessage("오디오 업로드에 실패했습니다. 다시 시도해 주세요.", true);
         saveDraftBtn.disabled = false;
@@ -339,15 +345,43 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     isSaving = false;
 
     if (result.error) {
+      // 방금 새 MP3를 업로드했는데 DB 저장이 실패한 경우, 고아로 남는 새 파일을 정리한다.
+      // 정리 실패는 원래 저장 오류 메시지를 덮어쓰지 않고 콘솔에만 별도로 남긴다.
+      if (fileToUpload && resolvedAudioUrl) {
+        const cleanup = await deletePostAudio(resolvedAudioUrl);
+        if (cleanup.error) {
+          console.error("[오디오 정리 실패] 저장 실패 후 새 파일 삭제 실패:", cleanup.error);
+        }
+      }
       showMessage(result.error, true);
       return;
     }
+
+    // 수정 화면에서 오디오를 교체(새 파일 업로드)했거나 명시적으로 제거(audioUrl === null)한 경우에만
+    // 더 이상 참조되지 않는 이전 Storage 파일을 정리한다. 제목/본문만 수정하거나 기존 오디오를
+    // 그대로 유지한 저장(audioUrl === undefined)에서는 절대 삭제하지 않는다.
+    const audioWasReplacedOrRemoved = !!fileToUpload || audioUrl === null;
+    const oldAudioUrlToCleanup =
+      editId && existingAudioUrl && audioWasReplacedOrRemoved && existingAudioUrl !== resolvedAudioUrl
+        ? existingAudioUrl
+        : null;
 
     selectedAudioFile = null;
     audioUrl = resolvedAudioUrl;
     audioTitle = resolvedAudioTitle;
     audioArtist = resolvedAudioArtist;
+    existingAudioUrl = resolvedAudioUrl ?? null;
+    existingAudioTitle = resolvedAudioTitle ?? null;
+    existingAudioArtist = resolvedAudioArtist ?? null;
     updateAudioUI();
+
+    if (oldAudioUrlToCleanup) {
+      const cleanup = await deletePostAudio(oldAudioUrlToCleanup);
+      if (cleanup.error) {
+        console.error("[오디오 정리 실패] 이전 오디오 파일 삭제 실패:", cleanup.error);
+        alert("게시글은 저장되었지만 이전 오디오 파일 정리에 실패했습니다. 관리자에게 문의해주세요.");
+      }
+    }
 
     if (editId || status === "published") {
       showMessage("저장되었습니다");
