@@ -16,6 +16,21 @@ export async function fetchRecentPosts(limit = 10) {
   return data ?? [];
 }
 
+export async function fetchPlayablePosts() {
+  const { data, error } = await supabase
+    .from("posts")
+    .select("id, slug, title, audio_url, audio_title, audio_artist, published_at")
+    .eq("status", "published")
+    .not("audio_url", "is", null)
+    .order("published_at", { ascending: false });
+
+  if (error) {
+    console.error(error);
+    return [];
+  }
+  return data ?? [];
+}
+
 export function formatDate(dateStr) {
   const d = new Date(dateStr);
   const yyyy = d.getFullYear();
