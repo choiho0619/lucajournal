@@ -1,4 +1,4 @@
-import { fetchPlayablePosts } from "./posts.js";
+import { fetchPlayablePosts } from "./posts.js?v=20260801";
 
 let initialized = false;
 let initializationPromise = null;
