@@ -2,7 +2,7 @@
   "name": "lucajournal",
   "private": true,
   "scripts": {
-    "dev": "wrangler pages dev . --compatibility-date=2026-07-29"
+    "dev": "wrangler pages dev . --compatibility-date=2026-07-29 --ip 0.0.0.0 --port 8788"
   },
   "devDependencies": {
     "wrangler": "^4.115.0"
