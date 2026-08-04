@@ -87,11 +87,8 @@ h1,h2,h3,h4,h5,h6{font-family:var(--font-kr-heading);}
 a{color:var(--color-accent-700);text-decoration:none;}
 a:hover{color:var(--color-accent);text-decoration:underline;}
 
-/* — cross mark (simple silhouette, no ornament) — */
-.cross{position:relative;width:20px;height:20px;flex:none;}
-.cross::before,.cross::after{content:"";position:absolute;background:var(--color-accent);}
-.cross::before{left:50%;top:0;width:3px;height:100%;transform:translateX(-50%);}
-.cross::after{top:38%;left:0;width:100%;height:3px;}
+/* — brand mark (site favicon) — */
+.brand-icon{width:32px;height:32px;flex:none;object-fit:contain;}
 
 /* — masthead / nav — */
 .nav{display:flex;align-items:center;justify-content:space-between;gap:24px;
@@ -167,7 +164,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 
 <div>
   <nav class="nav">
-    <a class="brand" href="/" style="text-decoration:none;color:inherit;"><span class="cross"></span><span class="brand-name">루카저널</span></a>
+    <a class="brand" href="/" style="text-decoration:none;color:inherit;"><img class="brand-icon" src="/assets/icons/favicon-64.png" alt="루카저널" width="32" height="32"><span class="brand-name">루카저널</span></a>
     <ul class="nav-links" id="nav-links">
       <li><a href="/category?code=DAILY">묵상</a></li>
       <li><a href="/category?code=PERSPECTIVE">시사</a></li>
