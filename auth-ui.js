@@ -1,6 +1,8 @@
-import { supabase, signOut, onAuthStateChanged } from "./auth.js";
+import { supabase, signOut, getAuthState, onAuthStateChanged } from "./auth.js";
 
 const authArea = document.getElementById("auth-area");
+const isPasswordResetPage = /^\/auth(?:\.html)?$/.test(window.location.pathname)
+  && new URLSearchParams(window.location.search).get("mode") === "reset";
 
 // 현재 페이지(경로+쿼리)를 returnTo로 실어 통합 인증 페이지로 보낸다.
 // 항상 같은 origin의 pathname+search에서만 만들어지므로 외부 URL이 섞일 수 없다.
@@ -46,6 +48,15 @@ function renderLoggedIn(name) {
   authArea.appendChild(logoutBtn);
 }
 
+function renderPasswordRecovery() {
+  authArea.innerHTML = "";
+  const status = document.createElement("span");
+  status.className = "nav-links";
+  status.style.fontSize = "13px";
+  status.textContent = "비밀번호 재설정 중";
+  authArea.appendChild(status);
+}
+
 async function resolveDisplayName(user) {
   const { data } = await supabase
     .from("profiles")
@@ -55,24 +66,37 @@ async function resolveDisplayName(user) {
   return data?.display_name || user.email.split("@")[0];
 }
 
-async function renderForUser(user) {
-  if (!user) {
+let renderRequestId = 0;
+
+async function renderForSession(session) {
+  const requestId = ++renderRequestId;
+  const authState = getAuthState(session);
+  if (authState === "password-recovery") {
+    renderPasswordRecovery();
+    return;
+  }
+  if (isPasswordResetPage) {
+    authArea.innerHTML = "";
+    return;
+  }
+  if (authState === "signed-out") {
     renderLoggedOut();
     return;
   }
-  const name = await resolveDisplayName(user);
+  const name = await resolveDisplayName(session.user);
+  if (requestId !== renderRequestId || getAuthState(session) !== "authenticated") return;
   renderLoggedIn(name);
 }
 
 export async function refreshAuthUI() {
   const { data: { session } } = await supabase.auth.getSession();
-  await renderForUser(session?.user ?? null);
+  await renderForSession(session);
 }
 
 supabase.auth.getSession().then(({ data: { session } }) => {
-  renderForUser(session?.user ?? null);
+  renderForSession(session);
 });
 
 onAuthStateChanged((_event, session) => {
-  renderForUser(session?.user ?? null);
+  renderForSession(session);
 });

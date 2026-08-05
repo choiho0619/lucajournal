@@ -239,7 +239,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 <script src="./vendor/jsmediatags.min.js"></script>
 <script type="module" src="./auth-ui.js"></script>
 <script type="module">
-  import { supabase, signInWithGoogle } from "./auth.js";
+  import { supabase, signInWithGoogle, redirectPasswordRecoveryToReset } from "./auth.js";
   import { fetchMyRole, fetchActiveCategories, createPost, fetchPostById, updatePost, uploadPostAudio, deletePostAudio } from "./posts.js";
 
   const gateLogin = document.getElementById("gate-login");
@@ -552,6 +552,8 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 
   // 클라이언트 측 role 체크는 UX 안내용일 뿐이며, 실제 접근 제어는 DB의 RLS 정책이 담당한다.
   document.addEventListener("DOMContentLoaded", async () => {
+    if (redirectPasswordRecoveryToReset()) return;
+
     const role = await fetchMyRole();
 
     if (role === null) {

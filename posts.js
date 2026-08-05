@@ -1,4 +1,4 @@
-import { supabase } from "./auth.js";
+import { supabase, isPasswordRecoverySession } from "./auth.js";
 import { SUPABASE_URL } from "./supabase-config.js";
 
 export async function fetchRecentPosts(limit = 10) {
@@ -125,6 +125,7 @@ export async function fetchPostsByCategory(categoryCode, limit = 20) {
 }
 
 export async function fetchMyRole() {
+  if (isPasswordRecoverySession()) return null;
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
@@ -171,6 +172,7 @@ export async function createPost({ categoryId, title, content, status, audioUrl,
     return { error: "제목과 본문을 입력해주세요" };
   }
 
+  if (isPasswordRecoverySession()) return { error: "비밀번호 재설정을 먼저 완료해 주세요." };
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return { error: "로그인이 필요합니다" };
@@ -208,6 +210,7 @@ export async function updatePost({ id, categoryId, title, content, audioUrl, aud
   if (!title?.trim() || !content?.trim()) {
     return { error: "제목과 본문을 입력해주세요" };
   }
+  if (isPasswordRecoverySession()) return { error: "비밀번호 재설정을 먼저 완료해 주세요." };
 
   const updatePayload = {
     category_id: categoryId,
@@ -253,6 +256,7 @@ export async function uploadPostAudio(file) {
   if (!file) {
     return { error: "파일을 선택해주세요" };
   }
+  if (isPasswordRecoverySession()) return { error: "비밀번호 재설정을 먼저 완료해 주세요." };
 
   const hasAllowedMime = ALLOWED_AUDIO_MIME_TYPES.includes(file.type);
   const hasMp3Extension = /\.mp3$/i.test(file.name || "");
@@ -330,6 +334,7 @@ function resolveAudioObjectPath(audioUrl) {
 // audioUrl이 없으면 아무 작업 없이 성공 처리한다. Storage DELETE 정책이 없거나 권한이 없으면
 // Supabase가 반환하는 오류 메시지를 그대로 전달한다 (호출부에서 사용자 경고/로그로 활용).
 export async function deletePostAudio(audioUrl) {
+  if (isPasswordRecoverySession()) return { error: "비밀번호 재설정을 먼저 완료해 주세요." };
   if (!audioUrl) {
     return { error: null };
   }
@@ -351,6 +356,9 @@ export async function deletePostAudio(audioUrl) {
 // 게시글 삭제: DB 행 삭제가 먼저 성공해야 Storage 정리를 시도한다. Storage 정리 실패는
 // 게시글 삭제 자체를 실패로 되돌리지 않으며, cleanupError로 별도 보고한다.
 export async function deletePost(id, audioUrl) {
+  if (isPasswordRecoverySession()) {
+    return { error: "비밀번호 재설정을 먼저 완료해 주세요.", cleanupError: null };
+  }
   const { error } = await supabase.from("posts").delete().eq("id", id);
   if (error) {
     return { error: error.message };

@@ -98,7 +98,7 @@ a:hover{color:var(--color-accent);text-decoration:underline;}
 .nav-links a:hover{color:var(--color-accent-700);}
 .nav-actions{display:flex;align-items:center;gap:12px;}
 .nav-toggle{display:none;flex-direction:column;justify-content:center;align-items:center;gap:5px;
-  width:36px;height:36px;border:none;background:transparent;padding:0;cursor:pointer;flex:none;}
+  width:44px;height:44px;border:none;background:transparent;padding:0;cursor:pointer;flex:none;}
 .nav-toggle-bar{display:block;width:22px;height:2px;background:var(--color-text);border-radius:1px;
   transition:transform .18s ease,opacity .18s ease;}
 .nav-toggle[aria-expanded="true"] .nav-toggle-bar:nth-child(1){transform:translateY(7px) rotate(45deg);}
@@ -148,7 +148,8 @@ a:hover{color:var(--color-accent);text-decoration:underline;}
   color:color-mix(in srgb, var(--color-text) 55%, transparent);word-break:keep-all;}
 .form-actions{display:flex;gap:12px;margin-top:8px;}
 .form-actions .btn{width:100%;}
-.form-message{font-size:14px;margin:16px 0 0;word-break:keep-all;}
+.form-message{font-size:14px;margin:16px 0 0;word-break:keep-all;white-space:pre-line;}
+.auth-assist{margin:12px 0 0;text-align:right;font-size:13px;}
 
 .checkbox-field{display:flex;align-items:flex-start;gap:8px;margin:0 0 14px;}
 .checkbox-field input[type="checkbox"]{margin-top:3px;flex:none;width:16px;height:16px;}
@@ -221,6 +222,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
             <button type="submit" id="login-submit-btn" class="btn btn-primary">이메일로 로그인</button>
           </div>
         </form>
+        <p class="auth-assist"><a href="#" id="goto-forgot-password">비밀번호를 잊으셨나요?</a></p>
         <p id="login-message" class="form-message" hidden role="status"></p>
 
         <div class="auth-divider">또는</div>
@@ -232,6 +234,44 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
         <p class="sub" style="margin-top:24px;font-size:14px;">
           아직 계정이 없으신가요? <a href="#" id="goto-signup">회원가입</a>
         </p>
+      </div>
+
+      <div id="panel-forgot-password" hidden>
+        <form id="forgot-password-form" novalidate>
+          <div class="field">
+            <label for="forgot-password-email">이메일</label>
+            <input id="forgot-password-email" type="email" autocomplete="email" required>
+          </div>
+          <div class="form-actions">
+            <button type="submit" id="forgot-password-submit-btn" class="btn btn-primary">재설정 메일 보내기</button>
+          </div>
+        </form>
+        <p id="forgot-password-message" class="form-message" hidden role="status"></p>
+        <p class="sub" style="margin-top:24px;font-size:14px;"><a href="#" id="forgot-password-back-login">로그인으로 돌아가기</a></p>
+      </div>
+
+      <div id="panel-reset-password" hidden>
+        <form id="reset-password-form" novalidate>
+          <div class="field">
+            <label for="reset-password">새 비밀번호</label>
+            <input id="reset-password" type="password" autocomplete="new-password" aria-describedby="reset-password-hint" required>
+            <p class="field-hint" id="reset-password-hint">비밀번호는 8자 이상이며 영문 대문자, 소문자, 숫자, 특수문자를 각각 1개 이상 포함해야 합니다.</p>
+          </div>
+          <div class="field">
+            <label for="reset-password-confirm">새 비밀번호 확인</label>
+            <input id="reset-password-confirm" type="password" autocomplete="new-password" required>
+          </div>
+          <div class="form-actions">
+            <button type="submit" id="reset-password-submit-btn" class="btn btn-primary" disabled>비밀번호 변경하기</button>
+          </div>
+        </form>
+        <p id="reset-password-message" class="form-message" role="status">비밀번호 재설정 링크를 확인하고 있습니다.</p>
+        <div class="form-actions" id="reset-password-invalid-actions" hidden>
+          <button type="button" id="reset-password-request-new" class="btn btn-secondary">재설정 메일 다시 받기</button>
+        </div>
+        <div class="form-actions" id="reset-password-complete-actions" hidden>
+          <button type="button" id="reset-password-back-login" class="btn btn-primary">로그인 화면으로 이동</button>
+        </div>
       </div>
 
       <div id="panel-signup" role="tabpanel" aria-labelledby="tab-signup" hidden>
@@ -281,7 +321,20 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 
 <script type="module" src="./auth-ui.js"></script>
 <script type="module">
-  import { signInWithGoogle, signInWithEmail, signUpWithEmail, describeAuthError, onAuthStateChanged } from "./auth.js";
+  import {
+    signInWithGoogle,
+    signInWithEmail,
+    signUpWithEmail,
+    signOut,
+    resetPasswordForEmail,
+    updatePassword,
+    clearPasswordRecoverySession,
+    isPasswordRecoverySession,
+    isAuthenticatedSession,
+    consumeAuthNotice,
+    describeAuthError,
+    onAuthStateChanged,
+  } from "./auth.js";
 
   // returnTo는 반드시 "/"로 시작하고 "//"나 "scheme://"를 포함하지 않는 내부 상대경로만 허용한다.
   // 이 조건을 벗어나면 오픈 리다이렉트로 악용될 수 있으므로 기본값(홈)으로 대체한다.
@@ -299,23 +352,28 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     window.location.href = returnTo;
   }
 
-  // 이미 로그인된 상태로 이 페이지에 들어오면(또는 Google/이메일 인증 완료 후 돌아오면) 바로 이동한다.
-  onAuthStateChanged((_event, session) => {
-    if (session?.user) {
-      goToReturnTo();
-    }
-  });
-
+  const authTabs = document.querySelector(".auth-tabs");
   const tabLogin = document.getElementById("tab-login");
   const tabSignup = document.getElementById("tab-signup");
   const panelLogin = document.getElementById("panel-login");
   const panelSignup = document.getElementById("panel-signup");
+  const panelForgotPassword = document.getElementById("panel-forgot-password");
+  const panelResetPassword = document.getElementById("panel-reset-password");
   const authHeading = document.getElementById("auth-heading");
+
+  function hideAuthPanels() {
+    panelLogin.hidden = true;
+    panelSignup.hidden = true;
+    panelForgotPassword.hidden = true;
+    panelResetPassword.hidden = true;
+  }
 
   function showLogin() {
     clearPasswordError();
+    clearResetPasswordError();
+    hideAuthPanels();
+    authTabs.hidden = false;
     panelLogin.hidden = false;
-    panelSignup.hidden = true;
     tabLogin.classList.add("is-active");
     tabSignup.classList.remove("is-active");
     tabLogin.setAttribute("aria-selected", "true");
@@ -324,7 +382,8 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
   }
 
   function showSignup() {
-    panelLogin.hidden = true;
+    hideAuthPanels();
+    authTabs.hidden = false;
     panelSignup.hidden = false;
     tabSignup.classList.add("is-active");
     tabLogin.classList.remove("is-active");
@@ -333,16 +392,30 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     authHeading.textContent = "회원가입";
   }
 
+  function showForgotPassword() {
+    hideAuthPanels();
+    authTabs.hidden = true;
+    panelForgotPassword.hidden = false;
+    authHeading.textContent = "비밀번호 찾기";
+  }
+
+  function showResetPassword() {
+    hideAuthPanels();
+    authTabs.hidden = true;
+    panelResetPassword.hidden = false;
+    authHeading.textContent = "새 비밀번호 설정";
+  }
+
   tabLogin.addEventListener("click", showLogin);
   tabSignup.addEventListener("click", showSignup);
   document.getElementById("goto-signup").addEventListener("click", (e) => {
     e.preventDefault();
     showSignup();
   });
-
-  if (params.get("mode") === "signup") {
-    showSignup();
-  }
+  document.getElementById("goto-forgot-password").addEventListener("click", (e) => {
+    e.preventDefault();
+    showForgotPassword();
+  });
 
   document.getElementById("google-login-btn").addEventListener("click", () => {
     signInWithGoogle();
@@ -537,6 +610,227 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
       signupSubmitBtn.textContent = "회원가입";
     }
   });
+
+  // — 비밀번호 재설정 메일 요청 —
+  const forgotPasswordForm = document.getElementById("forgot-password-form");
+  const forgotPasswordEmail = document.getElementById("forgot-password-email");
+  const forgotPasswordMessage = document.getElementById("forgot-password-message");
+  const forgotPasswordSubmitBtn = document.getElementById("forgot-password-submit-btn");
+  let forgotPasswordSubmitting = false;
+
+  document.getElementById("forgot-password-back-login").addEventListener("click", (e) => {
+    e.preventDefault();
+    window.history.replaceState({}, "", "/auth.html");
+    showLogin();
+  });
+
+  forgotPasswordForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (forgotPasswordSubmitting) return;
+
+    const email = forgotPasswordEmail.value.trim();
+    forgotPasswordMessage.hidden = true;
+
+    if (!EMAIL_REGEX.test(email)) {
+      showMessage(forgotPasswordMessage, "올바른 이메일 주소를 입력해 주세요.", true);
+      forgotPasswordEmail.focus();
+      return;
+    }
+
+    forgotPasswordSubmitting = true;
+    forgotPasswordSubmitBtn.disabled = true;
+    forgotPasswordSubmitBtn.textContent = "메일 보내는 중...";
+
+    try {
+      const { error } = await resetPasswordForEmail(email);
+      if (error) {
+        console.error(error);
+        showMessage(forgotPasswordMessage, describeAuthError(error, "password-reset-request"), true);
+        return;
+      }
+
+      forgotPasswordForm.hidden = true;
+      showMessage(forgotPasswordMessage, "비밀번호 재설정 메일을 보냈습니다.\n메일함을 확인해주세요.", false);
+    } catch (error) {
+      console.error(error);
+      showMessage(forgotPasswordMessage, describeAuthError(error, "password-reset-request"), true);
+    } finally {
+      forgotPasswordSubmitting = false;
+      forgotPasswordSubmitBtn.disabled = false;
+      forgotPasswordSubmitBtn.textContent = "재설정 메일 보내기";
+    }
+  });
+
+  // — 새 비밀번호 설정 —
+  const resetPasswordForm = document.getElementById("reset-password-form");
+  const resetPasswordInput = document.getElementById("reset-password");
+  const resetPasswordConfirmInput = document.getElementById("reset-password-confirm");
+  const resetPasswordMessage = document.getElementById("reset-password-message");
+  const resetPasswordSubmitBtn = document.getElementById("reset-password-submit-btn");
+  const resetPasswordInvalidActions = document.getElementById("reset-password-invalid-actions");
+  const resetPasswordCompleteActions = document.getElementById("reset-password-complete-actions");
+  let recoverySessionReady = false;
+  let resetPasswordSubmitting = false;
+  let resetPasswordErrorType = null;
+
+  document.getElementById("reset-password-hint").textContent = PASSWORD_POLICY.hintMessage;
+
+  function clearResetPasswordError() {
+    if (!resetPasswordErrorType) return;
+    resetPasswordErrorType = null;
+    resetPasswordInput.removeAttribute("aria-invalid");
+    resetPasswordConfirmInput.removeAttribute("aria-invalid");
+    resetPasswordMessage.textContent = "";
+    resetPasswordMessage.hidden = true;
+  }
+
+  function clearResolvedResetPasswordError() {
+    const policyResolved = resetPasswordErrorType === "policy" && meetsPasswordPolicy(resetPasswordInput.value);
+    const mismatchResolved = resetPasswordErrorType === "mismatch"
+      && resetPasswordInput.value === resetPasswordConfirmInput.value;
+    if (policyResolved || mismatchResolved) clearResetPasswordError();
+  }
+
+  function getRecoveryLinkError() {
+    const hashParams = new URLSearchParams(window.location.hash.slice(1));
+    const code = params.get("error_code") || hashParams.get("error_code") || "";
+    const description = params.get("error_description") || hashParams.get("error_description") || "";
+    const combined = `${code} ${description}`.toLowerCase();
+    if (!combined.trim()) return null;
+    return combined.includes("expired") || combined.includes("otp_expired")
+      ? "비밀번호 재설정 링크가 만료되었거나 이미 사용되었습니다. 새 메일을 요청해 주세요."
+      : "유효하지 않은 비밀번호 재설정 링크입니다. 새 메일을 요청해 주세요.";
+  }
+
+  function enablePasswordReset() {
+    recoverySessionReady = true;
+    resetPasswordSubmitBtn.disabled = false;
+    resetPasswordInvalidActions.hidden = true;
+    resetPasswordMessage.textContent = "";
+    resetPasswordMessage.hidden = true;
+    const notice = consumeAuthNotice();
+    if (notice) showMessage(resetPasswordMessage, notice, false);
+  }
+
+  function showInvalidRecoveryLink(message) {
+    const shouldSignOut = isPasswordRecoverySession();
+    clearPasswordRecoverySession();
+    if (shouldSignOut) {
+      signOut().then(({ error }) => {
+        if (error) console.error(error);
+      });
+    }
+    recoverySessionReady = false;
+    resetPasswordSubmitBtn.disabled = true;
+    resetPasswordInvalidActions.hidden = false;
+    showMessage(resetPasswordMessage, message, true);
+  }
+
+  resetPasswordInput.addEventListener("input", clearResolvedResetPasswordError);
+  resetPasswordConfirmInput.addEventListener("input", clearResolvedResetPasswordError);
+
+  resetPasswordForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (resetPasswordSubmitting) return;
+
+    if (!recoverySessionReady) {
+      showInvalidRecoveryLink("유효하지 않거나 만료된 비밀번호 재설정 링크입니다. 새 메일을 요청해 주세요.");
+      return;
+    }
+
+    const password = resetPasswordInput.value;
+    const passwordConfirm = resetPasswordConfirmInput.value;
+    clearResetPasswordError();
+
+    if (!password || !meetsPasswordPolicy(password)) {
+      resetPasswordErrorType = "policy";
+      resetPasswordInput.setAttribute("aria-invalid", "true");
+      showMessage(resetPasswordMessage, PASSWORD_POLICY.errorMessage, true);
+      resetPasswordInput.focus();
+      return;
+    }
+    if (!passwordConfirm) {
+      showMessage(resetPasswordMessage, "새 비밀번호 확인을 입력해 주세요.", true);
+      resetPasswordConfirmInput.focus();
+      return;
+    }
+    if (password !== passwordConfirm) {
+      resetPasswordErrorType = "mismatch";
+      resetPasswordConfirmInput.setAttribute("aria-invalid", "true");
+      showMessage(resetPasswordMessage, "비밀번호가 서로 일치하지 않습니다.", true);
+      resetPasswordConfirmInput.focus();
+      return;
+    }
+
+    resetPasswordSubmitting = true;
+    resetPasswordSubmitBtn.disabled = true;
+    resetPasswordSubmitBtn.textContent = "변경 중...";
+
+    try {
+      const { error } = await updatePassword(password);
+      resetPasswordInput.value = "";
+      resetPasswordConfirmInput.value = "";
+
+      if (error) {
+        console.error(error);
+        showMessage(resetPasswordMessage, describeAuthError(error, "password-reset-update"), true);
+        return;
+      }
+
+      clearPasswordRecoverySession();
+      await signOut();
+      resetPasswordForm.hidden = true;
+      resetPasswordCompleteActions.hidden = false;
+      showMessage(resetPasswordMessage, "비밀번호가 변경되었습니다.\n다시 로그인해주세요.", false);
+    } catch (error) {
+      console.error(error);
+      showMessage(resetPasswordMessage, describeAuthError(error, "password-reset-update"), true);
+    } finally {
+      resetPasswordSubmitting = false;
+      resetPasswordSubmitBtn.textContent = "비밀번호 변경하기";
+      if (recoverySessionReady && !resetPasswordForm.hidden) resetPasswordSubmitBtn.disabled = false;
+    }
+  });
+
+  document.getElementById("reset-password-back-login").addEventListener("click", () => {
+    window.history.replaceState({}, "", "/auth.html");
+    showLogin();
+  });
+
+  document.getElementById("reset-password-request-new").addEventListener("click", () => {
+    window.history.replaceState({}, "", "/auth?mode=forgot");
+    showForgotPassword();
+  });
+
+  const requestedMode = params.get("mode");
+  const recoveryLinkError = getRecoveryLinkError();
+
+  onAuthStateChanged((event, session) => {
+    const isRecovery = isPasswordRecoverySession();
+    if (session?.user && (event === "PASSWORD_RECOVERY" || (requestedMode === "reset" && isRecovery))) {
+      showResetPassword();
+      enablePasswordReset();
+      return;
+    }
+    if (isAuthenticatedSession(session) && requestedMode !== "reset") goToReturnTo();
+  });
+
+  if (requestedMode === "signup") {
+    showSignup();
+  } else if (requestedMode === "forgot") {
+    showForgotPassword();
+  } else if (requestedMode === "reset") {
+    showResetPassword();
+    if (recoveryLinkError) {
+      showInvalidRecoveryLink(recoveryLinkError);
+    } else {
+      window.setTimeout(() => {
+        if (!recoverySessionReady) {
+          showInvalidRecoveryLink("유효하지 않거나 만료된 비밀번호 재설정 링크입니다. 새 메일을 요청해 주세요.");
+        }
+      }, 3000);
+    }
+  }
 </script>
 <script>
   (function(){

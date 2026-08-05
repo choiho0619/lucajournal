@@ -264,7 +264,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 
 <script type="module" src="./auth-ui.js"></script>
 <script type="module">
-  import { supabase } from "./auth.js";
+  import { supabase, isAuthenticatedSession } from "./auth.js";
   import { fetchPostBySlug, formatDate, fetchMyRole, deletePost } from "./posts.js";
 
   function renderNotFound(container) {
@@ -783,11 +783,12 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     }
 
     try {
-    const [post, { data: { user } }, role] = await Promise.all([
+    const [post, { data: { session } }, role] = await Promise.all([
       fetchPostBySlug(slug),
-      supabase.auth.getUser(),
+      supabase.auth.getSession(),
       fetchMyRole(),
     ]);
+    const user = isAuthenticatedSession(session) ? session.user : null;
 
     if (!post) {
       renderNotFound(container);

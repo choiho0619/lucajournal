@@ -1,4 +1,4 @@
-import { supabase, signInWithGoogle, onAuthStateChanged } from "./auth.js";
+import { supabase, signInWithGoogle, getAuthState, onAuthStateChanged } from "./auth.js";
 import { formatDate } from "./posts.js";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -125,6 +125,15 @@ export function initMemberSubscribeWidget(mountId) {
 
     mount.appendChild(message);
     mount.appendChild(loginBtn);
+  }
+
+  function renderPasswordRecovery() {
+    mount.innerHTML = "";
+    const message = document.createElement("p");
+    message.className = "sub";
+    message.style.margin = "0";
+    message.textContent = "비밀번호 재설정을 먼저 완료해 주세요.";
+    mount.appendChild(message);
   }
 
   function renderUnsubscribed(email, noticeText) {
@@ -287,7 +296,12 @@ export function initMemberSubscribeWidget(mountId) {
 
   onAuthStateChanged((_event, session) => {
     requestId++;
-    if (!session?.user) {
+    const authState = getAuthState(session);
+    if (authState === "password-recovery") {
+      renderPasswordRecovery();
+      return;
+    }
+    if (authState === "signed-out") {
       renderLoggedOut();
       return;
     }

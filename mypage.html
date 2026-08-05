@@ -271,7 +271,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 
 <script type="module" src="./auth-ui.js"></script>
 <script type="module">
-  import { supabase, signInWithGoogle } from "./auth.js";
+  import { supabase, signInWithGoogle, isAuthenticatedSession, redirectPasswordRecoveryToReset } from "./auth.js";
   import { refreshAuthUI } from "./auth-ui.js";
 
   let currentUser = null;
@@ -557,7 +557,11 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
   document.getElementById("gate-login-btn").addEventListener("click", () => signInWithGoogle());
 
   document.addEventListener("DOMContentLoaded", async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (redirectPasswordRecoveryToReset()) return;
+
+    const user = isAuthenticatedSession(session) ? session.user : null;
 
     if (!user) {
       document.getElementById("gate-login").hidden = false;

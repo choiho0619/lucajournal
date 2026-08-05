@@ -1,7 +1,8 @@
 import { fetchPlayablePosts } from "./posts.js?v=20260801";
-import { supabase, onAuthStateChanged } from "./auth.js";
+import { supabase, getAuthState, onAuthStateChanged } from "./auth.js";
 
 const LOGIN_REQUIRED_MESSAGE = "루카저널 Playlist는 회원가입 후 로그인하면 이용할 수 있습니다.";
+const RECOVERY_REQUIRED_MESSAGE = "비밀번호 재설정을 먼저 완료해 주세요.";
 
 let initialized = false;
 let initializationPromise = null;
@@ -27,11 +28,13 @@ async function initialize() {
     shufflePosition: -1,
     playing: false,
     authUser: null,
+    authState: "signed-out",
   };
 
   const authReady = resolveAuthUser(state);
   onAuthStateChanged((_event, session) => {
-    state.authUser = session?.user ?? null;
+    state.authState = getAuthState(session);
+    state.authUser = state.authState === "authenticated" ? session.user : null;
     if (!state.authUser && !elements.audio.paused) elements.audio.pause();
   });
 
@@ -293,7 +296,8 @@ async function resolveAuthUser(state) {
   try {
     const { data, error } = await supabase.auth.getSession();
     if (error) throw error;
-    state.authUser = data.session?.user ?? null;
+    state.authState = getAuthState(data.session);
+    state.authUser = state.authState === "authenticated" ? data.session.user : null;
   } catch (error) {
     state.authUser = null;
     console.error("Playlist 로그인 상태를 확인하지 못했습니다.", error);
@@ -303,7 +307,7 @@ async function resolveAuthUser(state) {
 async function requirePlaybackAccess(state, authReady) {
   await authReady;
   if (state.authUser) return true;
-  window.alert(LOGIN_REQUIRED_MESSAGE);
+  window.alert(state.authState === "password-recovery" ? RECOVERY_REQUIRED_MESSAGE : LOGIN_REQUIRED_MESSAGE);
   return false;
 }
 
