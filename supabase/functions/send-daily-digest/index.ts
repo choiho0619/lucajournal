@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.112.1";
 
 const RESEND_API_URL = "https://api.resend.com/emails";
 const SITE_URL = "https://lucajournal.com";
