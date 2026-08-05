@@ -1,15 +1,29 @@
-import { supabase, signInWithGoogle, signOut, onAuthStateChanged } from "./auth.js";
+import { supabase, signOut, onAuthStateChanged } from "./auth.js";
 
 const authArea = document.getElementById("auth-area");
 
+// 현재 페이지(경로+쿼리)를 returnTo로 실어 통합 인증 페이지로 보낸다.
+// 항상 같은 origin의 pathname+search에서만 만들어지므로 외부 URL이 섞일 수 없다.
+function buildAuthPageUrl(mode) {
+  const returnTo = window.location.pathname + window.location.search;
+  const params = new URLSearchParams({ returnTo });
+  if (mode) params.set("mode", mode);
+  return `/auth.html?${params.toString()}`;
+}
+
 function renderLoggedOut() {
   authArea.innerHTML = "";
-  const loginBtn = document.createElement("button");
-  loginBtn.type = "button";
-  loginBtn.className = "btn btn-secondary";
-  loginBtn.textContent = "로그인";
-  loginBtn.addEventListener("click", () => signInWithGoogle());
-  authArea.appendChild(loginBtn);
+  const loginLink = document.createElement("a");
+  loginLink.className = "btn btn-secondary";
+  loginLink.textContent = "로그인";
+  loginLink.href = buildAuthPageUrl();
+
+  const signupLink = document.createElement("a");
+  signupLink.className = "btn btn-secondary";
+  signupLink.textContent = "회원가입";
+  signupLink.href = buildAuthPageUrl("signup");
+
+  authArea.append(loginLink, signupLink);
 }
 
 function renderLoggedIn(name) {

@@ -109,8 +109,10 @@ a:hover{color:var(--color-accent);text-decoration:underline;}
 .nav-toggle[aria-expanded="true"] .nav-toggle-bar:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
 
 @media (max-width: 640px){
-  .brand-name{white-space:nowrap;font-size:17px;}
-  .nav{position:relative;}
+  .brand{gap:6px;}
+  .brand-icon{width:28px;height:28px;}
+  .brand-name{white-space:nowrap;font-size:15px;}
+  .nav{position:relative;gap:6px;padding-left:12px;padding-right:12px;}
   .nav-toggle{display:flex;}
   .nav-links{display:none;flex-direction:column;align-items:stretch;gap:0;
     position:absolute;top:100%;left:0;right:0;margin:0;
@@ -120,7 +122,9 @@ a:hover{color:var(--color-accent);text-decoration:underline;}
   .nav-links.nav-open{display:flex;}
   .nav-links li{flex:none;width:100%;}
   .nav-links a{white-space:normal;display:block;padding:12px clamp(20px,5vw,64px);}
-  #auth-area{min-width:96px!important;justify-content:flex-end;}
+  .nav-actions{gap:4px;}
+  #auth-area{min-width:0!important;justify-content:flex-end;gap:6px!important;}
+  #auth-area .btn{padding-left:7px;padding-right:7px;white-space:nowrap;font-size:12px;}
   .hero-grid{grid-template-columns:1fr!important;}
   .hero-grid .headline{word-break:keep-all;max-width:none!important;}
 }
@@ -256,7 +260,6 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
           <span class="eyebrow">복음과 시대의 기록</span>
           <h1 class="headline" style="font-size:clamp(32px,3.6vw,46px);max-width:14ch;">말씀과 역사,<br>그리고 오늘의 시선</h1>
           <p class="sub">매일의 묵상과 시대의 흐름을 성경적 관점으로 기록합니다.</p>
-          <div id="subscribe-mount" style="margin-top:26px;max-width:360px;"></div>
         </div>
         <div class="hero-side">
           <div class="hero-side-card" style="padding:26px 24px;">
@@ -353,24 +356,13 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 <script type="module" src="./auth-ui.js"></script>
 <script type="module">
   import { fetchRecentPosts, renderRecentPosts } from "./posts.js";
-  import { initSubscribeWidget } from "./subscribe.js";
-  import { initPlaylist } from "./playlist.js?v=20260801";
+  import { initPlaylist } from "./playlist.js?v=20260805";
 
   document.addEventListener("DOMContentLoaded", async () => {
     initPlaylist();
     const posts = await fetchRecentPosts();
     renderRecentPosts(posts);
 
-    if (localStorage.getItem("lj_subscribed") === "1") {
-      const mount = document.getElementById("subscribe-mount");
-      mount.style.maxWidth = "56ch";
-      const already = document.createElement("p");
-      already.className = "subscribed-badge";
-      already.textContent = "매일 정오, 새 글을 이메일로 보내드리고 있습니다.";
-      mount.appendChild(already);
-    } else {
-      initSubscribeWidget("subscribe-mount");
-    }
   });
 </script>
 <script>

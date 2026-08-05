@@ -1,4 +1,7 @@
 import { fetchPlayablePosts } from "./posts.js?v=20260801";
+import { supabase, onAuthStateChanged } from "./auth.js";
+
+const LOGIN_REQUIRED_MESSAGE = "루카저널 Playlist는 회원가입 후 로그인하면 이용할 수 있습니다.";
 
 let initialized = false;
 let initializationPromise = null;
@@ -23,9 +26,16 @@ async function initialize() {
     shuffleOrder: [],
     shufflePosition: -1,
     playing: false,
+    authUser: null,
   };
 
-  bindEvents(elements, state);
+  const authReady = resolveAuthUser(state);
+  onAuthStateChanged((_event, session) => {
+    state.authUser = session?.user ?? null;
+    if (!state.authUser && !elements.audio.paused) elements.audio.pause();
+  });
+
+  bindEvents(elements, state, authReady);
   setControlsDisabled(elements, true);
   setStatus(elements, "플레이리스트를 불러오는 중입니다.");
 
@@ -38,7 +48,7 @@ async function initialize() {
 
   state.tracks = Array.isArray(tracks) ? tracks.filter((track) => isValidAudioUrl(track?.audio_url)) : [];
   elements.count.textContent = `${state.tracks.length}곡`;
-  renderTrackList(elements, state);
+  renderTrackList(elements, state, authReady);
 
   if (state.tracks.length === 0) {
     elements.currentTitle.textContent = "곡을 선택해 주세요.";
@@ -76,12 +86,22 @@ function getElements() {
   return Object.values(elements).every(Boolean) ? elements : null;
 }
 
-function bindEvents(elements, state) {
+function bindEvents(elements, state, authReady) {
   const { audio } = elements;
 
-  elements.play.addEventListener("click", () => togglePlayback(elements, state));
-  elements.previous.addEventListener("click", () => moveToPreviousTrack(elements, state));
-  elements.next.addEventListener("click", () => moveToNextTrack(elements, state));
+  elements.play.addEventListener("click", async () => {
+    if (!audio.paused) {
+      audio.pause();
+      return;
+    }
+    if (await requirePlaybackAccess(state, authReady)) togglePlayback(elements, state, authReady);
+  });
+  elements.previous.addEventListener("click", async () => {
+    if (await requirePlaybackAccess(state, authReady)) moveToPreviousTrack(elements, state, authReady);
+  });
+  elements.next.addEventListener("click", async () => {
+    if (await requirePlaybackAccess(state, authReady)) moveToNextTrack(elements, state, authReady);
+  });
   elements.shuffle.addEventListener("click", () => toggleShuffle(elements, state));
   elements.repeat.addEventListener("click", () => cycleRepeatMode(elements, state));
   elements.trackToggle.addEventListener("click", () => toggleTrackList(elements));
@@ -97,7 +117,7 @@ function bindEvents(elements, state) {
     updatePlayButton(elements, false);
     updateTrackStates(elements, state);
   });
-  audio.addEventListener("ended", () => handleTrackEnded(elements, state));
+  audio.addEventListener("ended", () => handleTrackEnded(elements, state, authReady));
   audio.addEventListener("loadedmetadata", () => updateProgress(elements));
   audio.addEventListener("durationchange", () => updateProgress(elements));
   audio.addEventListener("timeupdate", () => updateProgress(elements));
@@ -109,7 +129,7 @@ function bindEvents(elements, state) {
   });
 }
 
-function renderTrackList(elements, state) {
+function renderTrackList(elements, state, authReady) {
   elements.trackList.replaceChildren();
 
   state.tracks.forEach((track, index) => {
@@ -134,12 +154,14 @@ function renderTrackList(elements, state) {
     copy.append(title, meta);
 
     button.append(number, copy);
-    button.addEventListener("click", () => loadTrack(elements, state, index, true));
+    button.addEventListener("click", async () => {
+      if (await requirePlaybackAccess(state, authReady)) loadTrack(elements, state, index, true, authReady);
+    });
     elements.trackList.appendChild(button);
   });
 }
 
-function loadTrack(elements, state, index, shouldPlay) {
+function loadTrack(elements, state, index, shouldPlay, authReady) {
   const track = state.tracks[index];
   if (!track || !isValidAudioUrl(track.audio_url)) {
     setStatus(elements, "오디오를 재생할 수 없습니다.", true);
@@ -160,7 +182,7 @@ function loadTrack(elements, state, index, shouldPlay) {
   setStatus(elements, "");
   updateTrackStates(elements, state);
 
-  if (shouldPlay) playCurrentTrack(elements, state);
+  if (shouldPlay) playCurrentTrack(elements, state, authReady);
 }
 
 function resetAudioSource(audio) {
@@ -170,7 +192,9 @@ function resetAudioSource(audio) {
   audio.load();
 }
 
-async function playCurrentTrack(elements, state) {
+async function playCurrentTrack(elements, state, authReady) {
+  if (!(await requirePlaybackAccess(state, authReady))) return;
+
   if (state.currentIndex < 0) {
     const firstIndex = state.shuffle ? state.shuffleOrder[0] : 0;
     loadTrack(elements, state, firstIndex, false);
@@ -186,19 +210,19 @@ async function playCurrentTrack(elements, state) {
   }
 }
 
-function togglePlayback(elements, state) {
+function togglePlayback(elements, state, authReady) {
   if (state.tracks.length === 0) return;
   if (state.currentIndex < 0 || elements.audio.paused) {
-    playCurrentTrack(elements, state);
+    playCurrentTrack(elements, state, authReady);
   } else {
     elements.audio.pause();
   }
 }
 
-function moveToNextTrack(elements, state) {
+function moveToNextTrack(elements, state, authReady) {
   if (state.tracks.length === 0) return;
   if (state.currentIndex < 0) {
-    playCurrentTrack(elements, state);
+    playCurrentTrack(elements, state, authReady);
     return;
   }
 
@@ -212,13 +236,13 @@ function moveToNextTrack(elements, state) {
     setStatus(elements, "플레이리스트의 마지막 곡입니다.");
     return;
   }
-  loadTrack(elements, state, nextIndex, true);
+  loadTrack(elements, state, nextIndex, true, authReady);
 }
 
-function moveToPreviousTrack(elements, state) {
+function moveToPreviousTrack(elements, state, authReady) {
   if (state.tracks.length === 0) return;
   if (state.currentIndex < 0) {
-    playCurrentTrack(elements, state);
+    playCurrentTrack(elements, state, authReady);
     return;
   }
   if (elements.audio.currentTime > 3) {
@@ -233,7 +257,7 @@ function moveToPreviousTrack(elements, state) {
     updateProgress(elements);
     return;
   }
-  loadTrack(elements, state, previousIndex, true);
+  loadTrack(elements, state, previousIndex, true, authReady);
 }
 
 function getAdjacentIndex(state, direction) {
@@ -256,13 +280,31 @@ function getAdjacentIndex(state, direction) {
   return null;
 }
 
-function handleTrackEnded(elements, state) {
+function handleTrackEnded(elements, state, authReady) {
   if (state.repeatMode === "one") {
     elements.audio.currentTime = 0;
-    playCurrentTrack(elements, state);
+    playCurrentTrack(elements, state, authReady);
     return;
   }
-  moveToNextTrack(elements, state);
+  moveToNextTrack(elements, state, authReady);
+}
+
+async function resolveAuthUser(state) {
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) throw error;
+    state.authUser = data.session?.user ?? null;
+  } catch (error) {
+    state.authUser = null;
+    console.error("Playlist 로그인 상태를 확인하지 못했습니다.", error);
+  }
+}
+
+async function requirePlaybackAccess(state, authReady) {
+  await authReady;
+  if (state.authUser) return true;
+  window.alert(LOGIN_REQUIRED_MESSAGE);
+  return false;
 }
 
 function toggleShuffle(elements, state) {

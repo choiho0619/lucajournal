@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>루카저널 — 로그인</title>
+<!-- Favicon & Manifest -->
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/assets/icons/favicon-16.png">
+<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="#854F0B">
+<!-- Open Graph & SEO -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="루카저널">
+<meta property="og:title" content="루카저널 로그인">
+<meta property="og:url" content="https://lucajournal.com/auth">
+<meta property="og:image" content="https://lucajournal.com/assets/og-default.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="robots" content="noindex, nofollow">
+<template id="__bundler_thumbnail" data-bg-color="#f3f2f2">
+  <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+    <rect width="120" height="120" fill="#f3f2f2"/>
+    <rect x="56" y="30" width="8" height="60" fill="#854F0B"/>
+    <rect x="36" y="50" width="48" height="8" fill="#854F0B"/>
+  </svg>
+</template>
+<style>html{background:#f3f2f2;}</style>
+<link rel="stylesheet" href="_ds/classical-8f6f9324-18f5-4c72-8750-50f577e7d92e/styles.css">
+<script src="./ds-base.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Lora:wght@400;600&display=swap">
+<style>
+:root{
+  /* Brand override: toffee brown accent replaces the system's gold, per brand spec.
+     Ground, text and structural tokens (cream bg, ink text, hairline dividers,
+     spacing/radius/shadow scale) are kept from the Classical system as-is. */
+  --color-accent: #854F0B;
+  --color-accent-2: #854F0B;
+  --color-accent-100: #FBF1E4;
+  --color-accent-200: #F2DFC0;
+  --color-accent-300: #E0BD86;
+  --color-accent-400: #C99A57;
+  --color-accent-500: #A8722C;
+  --color-accent-600: #854F0B;
+  --color-accent-700: #6E4109;
+  --color-accent-800: #573307;
+  --color-accent-900: #2A1804;
+  --color-accent-2-100: #FBF1E4;
+  --color-accent-2-200: #F2DFC0;
+  --color-accent-2-300: #E0BD86;
+  --color-accent-2-400: #C99A57;
+  --color-accent-2-500: #A8722C;
+  --color-accent-2-600: #854F0B;
+  --color-accent-2-700: #6E4109;
+  --color-accent-2-800: #573307;
+  --color-accent-2-900: #2A1804;
+  /* Korean serif stack: Noto Serif KR for Hangul, system serif fallback for Latin/numerals */
+  --font-kr-heading: "Noto Serif KR", var(--font-heading), serif;
+  --font-kr-body: "Noto Serif KR", var(--font-body), serif;
+}
+/* View Transitions API: 크로스 도큐먼트 전환. 미지원 브라우저에서는 조용히 무시되는 progressive enhancement */
+@view-transition {
+  navigation: auto;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.18s;
+}
+html{scroll-behavior:smooth;}
+body{margin:0;text-wrap:pretty;font-family:var(--font-kr-body);display:flex;flex-direction:column;min-height:100vh;}
+/* footer 위치 고정: body 직속 wrapper(div 또는 index.html의 section)를 flex column으로 늘리고,
+   footer는 margin-top:auto로 항상 맨 아래에 붙인다 */
+body > div,body > section{flex:1;display:flex;flex-direction:column;}
+body > section > div{flex:1;display:flex;flex-direction:column;}
+.page-main{flex:1;}
+h1,h2,h3,h4,h5,h6{font-family:var(--font-kr-heading);}
+.wrap{max-width:1120px;margin:0 auto;padding:0 clamp(20px,5vw,64px);}
+.rule{height:1px;border:0;margin:0;background:var(--color-divider);}
+a{color:var(--color-accent-700);text-decoration:none;}
+a:hover{color:var(--color-accent);text-decoration:underline;}
+
+/* — brand mark (site favicon) — */
+.brand-icon{width:32px;height:32px;flex:none;object-fit:contain;}
+
+/* — masthead / nav — */
+.nav{display:flex;align-items:center;justify-content:space-between;gap:24px;
+  padding:22px clamp(20px,5vw,64px);}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand-name{font-family:var(--font-kr-heading);font-weight:600;font-size:20px;letter-spacing:-.01em;}
+.nav-links{display:flex;gap:28px;align-items:center;list-style:none;margin:0;padding:0;}
+.nav-links a{font-size:14.5px;color:#201f1d;}
+.nav-links a:hover{color:var(--color-accent-700);}
+.nav-actions{display:flex;align-items:center;gap:12px;}
+.nav-toggle{display:none;flex-direction:column;justify-content:center;align-items:center;gap:5px;
+  width:36px;height:36px;border:none;background:transparent;padding:0;cursor:pointer;flex:none;}
+.nav-toggle-bar{display:block;width:22px;height:2px;background:var(--color-text);border-radius:1px;
+  transition:transform .18s ease,opacity .18s ease;}
+.nav-toggle[aria-expanded="true"] .nav-toggle-bar:nth-child(1){transform:translateY(7px) rotate(45deg);}
+.nav-toggle[aria-expanded="true"] .nav-toggle-bar:nth-child(2){opacity:0;}
+.nav-toggle[aria-expanded="true"] .nav-toggle-bar:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
+
+@media (max-width: 640px){
+  .brand-name{white-space:nowrap;font-size:17px;}
+  .nav{position:relative;}
+  .nav-toggle{display:flex;}
+  .nav-links{display:none;flex-direction:column;align-items:stretch;gap:0;
+    position:absolute;top:100%;left:0;right:0;margin:0;
+    background:var(--color-bg);border:1px solid var(--color-divider);border-top:none;
+    padding:4px 0;z-index:20;
+    box-shadow:0 8px 20px color-mix(in srgb, var(--color-text) 12%, transparent);}
+  .nav-links.nav-open{display:flex;}
+  .nav-links li{flex:none;width:100%;}
+  .nav-links a{white-space:normal;display:block;padding:12px clamp(20px,5vw,64px);}
+  #auth-area{min-width:96px!important;justify-content:flex-end;}
+}
+
+/* — hero shared type — */
+.eyebrow{display:block;font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--color-accent-700);font-weight:600;margin:0 0 14px;}
+.headline{font-weight:600;letter-spacing:-.01em;margin:0;}
+.sub{font-size:16.5px;line-height:1.7;color:color-mix(in srgb, var(--color-text) 76%, transparent);
+  max-width:56ch;margin:16px 0 0;word-break:keep-all;}
+
+/* — auth card (mypage.html 관례 재사용: mypage-section, field, form-actions, form-message) — */
+.mypage-section{padding:48px 0;max-width:800px;}
+.mypage-section:first-child{padding-top:56px;}
+.mypage-section:last-child{padding-bottom:64px;}
+
+.auth-card{max-width:420px;margin:0 auto;width:100%;box-sizing:border-box;}
+
+.auth-tabs{display:flex;gap:4px;margin:0 0 28px;border-bottom:1px solid var(--color-divider);}
+.auth-tab{flex:1;padding:12px 4px;background:none;border:none;border-bottom:2px solid transparent;
+  font-family:inherit;font-size:15px;font-weight:600;color:color-mix(in srgb, var(--color-text) 55%, transparent);
+  cursor:pointer;}
+.auth-tab.is-active{color:var(--color-accent-700);border-bottom-color:var(--color-accent-700);}
+
+.field{margin:0 0 20px;}
+.field label{display:block;font-size:13px;font-weight:600;color:var(--color-accent-700);margin:0 0 8px;}
+.field input{width:100%;box-sizing:border-box;font-family:inherit;font-size:15px;
+  padding:10px 12px;border:1px solid var(--color-divider);border-radius:var(--radius-md);background:transparent;color:inherit;}
+.field-hint{margin:7px 0 0;font-size:12px;line-height:1.55;
+  color:color-mix(in srgb, var(--color-text) 55%, transparent);word-break:keep-all;}
+.form-actions{display:flex;gap:12px;margin-top:8px;}
+.form-actions .btn{width:100%;}
+.form-message{font-size:14px;margin:16px 0 0;word-break:keep-all;}
+
+.checkbox-field{display:flex;align-items:flex-start;gap:8px;margin:0 0 14px;}
+.checkbox-field input[type="checkbox"]{margin-top:3px;flex:none;width:16px;height:16px;}
+.checkbox-field label{font-size:14px;line-height:1.5;color:color-mix(in srgb, var(--color-text) 82%, transparent);}
+.checkbox-field label a{color:var(--color-accent-700);text-decoration:underline;}
+
+.auth-divider{display:flex;align-items:center;gap:12px;margin:24px 0;
+  font-size:12.5px;color:color-mix(in srgb, var(--color-text) 55%, transparent);}
+.auth-divider::before,.auth-divider::after{content:"";flex:1;height:1px;background:var(--color-divider);}
+
+[hidden]{display:none !important;}
+
+footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
+  color:color-mix(in srgb, var(--color-text) 60%, transparent);
+  display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:auto;}
+</style>
+</head>
+<body>
+
+<div>
+  <nav class="nav">
+    <a class="brand" href="/" style="text-decoration:none;color:inherit;"><img class="brand-icon" src="/assets/icons/favicon-64.png" alt="루카저널" width="32" height="32"><span class="brand-name">루카저널</span></a>
+    <ul class="nav-links" id="nav-links">
+      <li><a href="/category?code=DAILY">묵상</a></li>
+      <li><a href="/category?code=PERSPECTIVE">시사</a></li>
+      <li><a href="/category?code=HERITAGE">역사</a></li>
+      <li><a href="/category?code=APOLOGETICS">변증</a></li>
+      <li><a href="/category?code=CULTURE">문화</a></li>
+      <li><a href="/category?code=NOTICE">공지</a></li>
+      <li><a href="/about">소개</a></li>
+      <li><a href="/shop">굿즈샵</a></li>
+    </ul>
+    <div class="nav-actions">
+      <div id="auth-area" style="display:flex;align-items:center;gap:12px;min-width:140px;"></div>
+      <button type="button" class="nav-toggle" id="nav-toggle" aria-label="메뉴 열기" aria-expanded="false" aria-controls="nav-links">
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+      </button>
+    </div>
+  </nav>
+  <main class="page-main">
+<hr class="rule">
+
+  <div class="wrap">
+    <section class="mypage-section auth-card" style="padding-bottom:0;">
+      <span class="eyebrow">루카저널</span>
+      <h1 class="headline" id="auth-heading" style="font-size:clamp(26px,3vw,34px);">로그인</h1>
+    </section>
+  </div>
+
+  <div class="wrap">
+    <section class="mypage-section auth-card">
+      <div class="auth-tabs" role="tablist" aria-label="인증 방식 선택">
+        <button type="button" id="tab-login" class="auth-tab is-active" role="tab" aria-selected="true" aria-controls="panel-login">로그인</button>
+        <button type="button" id="tab-signup" class="auth-tab" role="tab" aria-selected="false" aria-controls="panel-signup">회원가입</button>
+      </div>
+
+      <div id="panel-login" role="tabpanel" aria-labelledby="tab-login">
+        <form id="login-form" novalidate>
+          <div class="field">
+            <label for="login-email">이메일</label>
+            <input id="login-email" type="email" autocomplete="email" required>
+          </div>
+          <div class="field">
+            <label for="login-password">비밀번호</label>
+            <input id="login-password" type="password" autocomplete="current-password" required>
+          </div>
+          <div class="form-actions">
+            <button type="submit" id="login-submit-btn" class="btn btn-primary">이메일로 로그인</button>
+          </div>
+        </form>
+        <p id="login-message" class="form-message" hidden role="status"></p>
+
+        <div class="auth-divider">또는</div>
+
+        <div class="form-actions">
+          <button type="button" id="google-login-btn" class="btn btn-secondary">Google로 계속하기</button>
+        </div>
+
+        <p class="sub" style="margin-top:24px;font-size:14px;">
+          아직 계정이 없으신가요? <a href="#" id="goto-signup">회원가입</a>
+        </p>
+      </div>
+
+      <div id="panel-signup" role="tabpanel" aria-labelledby="tab-signup" hidden>
+        <form id="signup-form" novalidate>
+          <div class="field">
+            <label for="signup-email">이메일</label>
+            <input id="signup-email" type="email" autocomplete="email" required>
+          </div>
+          <div class="field">
+            <label for="signup-nickname">닉네임</label>
+            <input id="signup-nickname" type="text" maxlength="30" autocomplete="nickname" required>
+          </div>
+          <div class="field">
+            <label for="signup-password">비밀번호</label>
+            <input id="signup-password" type="password" autocomplete="new-password" aria-describedby="signup-password-hint" required>
+            <p class="field-hint" id="signup-password-hint">비밀번호는 8자 이상이며 영문 대문자, 소문자, 숫자, 특수문자를 각각 1개 이상 포함해야 합니다.</p>
+          </div>
+          <div class="field">
+            <label for="signup-password-confirm">비밀번호 확인</label>
+            <input id="signup-password-confirm" type="password" autocomplete="new-password" required>
+          </div>
+
+          <div class="checkbox-field">
+            <input type="checkbox" id="agree-terms" required>
+            <label for="agree-terms"><a href="/terms" target="_blank" rel="noopener">이용약관</a>에 동의합니다.</label>
+          </div>
+          <div class="checkbox-field">
+            <input type="checkbox" id="agree-privacy" required>
+            <label for="agree-privacy"><a href="/privacy" target="_blank" rel="noopener">개인정보처리방침</a>에 동의합니다.</label>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" id="signup-submit-btn" class="btn btn-primary">회원가입</button>
+          </div>
+        </form>
+        <p id="signup-message" class="form-message" hidden role="status"></p>
+      </div>
+    </section>
+  </div>
+  </main>
+
+  <footer class="site-footer">
+    <span>© 2026 Luca Journal. All rights reserved.</span>
+    <span style="display:flex;gap:16px;flex-wrap:wrap;"><a href="/terms">이용약관</a><a href="/privacy">개인정보처리방침</a></span>
+  </footer>
+</div>
+
+<script type="module" src="./auth-ui.js"></script>
+<script type="module">
+  import { signInWithGoogle, signInWithEmail, signUpWithEmail, describeAuthError, onAuthStateChanged } from "./auth.js";
+
+  // returnTo는 반드시 "/"로 시작하고 "//"나 "scheme://"를 포함하지 않는 내부 상대경로만 허용한다.
+  // 이 조건을 벗어나면 오픈 리다이렉트로 악용될 수 있으므로 기본값(홈)으로 대체한다.
+  function sanitizeReturnTo(raw) {
+    if (!raw) return null;
+    if (!/^\/(?!\/)/.test(raw)) return null;
+    if (raw.includes("://")) return null;
+    return raw;
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const returnTo = sanitizeReturnTo(params.get("returnTo")) || "/";
+
+  function goToReturnTo() {
+    window.location.href = returnTo;
+  }
+
+  // 이미 로그인된 상태로 이 페이지에 들어오면(또는 Google/이메일 인증 완료 후 돌아오면) 바로 이동한다.
+  onAuthStateChanged((_event, session) => {
+    if (session?.user) {
+      goToReturnTo();
+    }
+  });
+
+  const tabLogin = document.getElementById("tab-login");
+  const tabSignup = document.getElementById("tab-signup");
+  const panelLogin = document.getElementById("panel-login");
+  const panelSignup = document.getElementById("panel-signup");
+  const authHeading = document.getElementById("auth-heading");
+
+  function showLogin() {
+    clearPasswordError();
+    panelLogin.hidden = false;
+    panelSignup.hidden = true;
+    tabLogin.classList.add("is-active");
+    tabSignup.classList.remove("is-active");
+    tabLogin.setAttribute("aria-selected", "true");
+    tabSignup.setAttribute("aria-selected", "false");
+    authHeading.textContent = "로그인";
+  }
+
+  function showSignup() {
+    panelLogin.hidden = true;
+    panelSignup.hidden = false;
+    tabSignup.classList.add("is-active");
+    tabLogin.classList.remove("is-active");
+    tabSignup.setAttribute("aria-selected", "true");
+    tabLogin.setAttribute("aria-selected", "false");
+    authHeading.textContent = "회원가입";
+  }
+
+  tabLogin.addEventListener("click", showLogin);
+  tabSignup.addEventListener("click", showSignup);
+  document.getElementById("goto-signup").addEventListener("click", (e) => {
+    e.preventDefault();
+    showSignup();
+  });
+
+  if (params.get("mode") === "signup") {
+    showSignup();
+  }
+
+  document.getElementById("google-login-btn").addEventListener("click", () => {
+    signInWithGoogle();
+  });
+
+  function showMessage(el, text, isError) {
+    el.textContent = text;
+    el.style.color = isError ? "#b3261e" : "";
+    el.hidden = false;
+  }
+
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  // — 로그인 —
+  const loginForm = document.getElementById("login-form");
+  const loginMessage = document.getElementById("login-message");
+  const loginSubmitBtn = document.getElementById("login-submit-btn");
+  let loginSubmitting = false;
+
+  loginForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (loginSubmitting) return;
+
+    const email = document.getElementById("login-email").value.trim();
+    const password = document.getElementById("login-password").value;
+
+    loginMessage.hidden = true;
+
+    if (!email || !password) {
+      showMessage(loginMessage, "이메일과 비밀번호를 입력해 주세요.", true);
+      return;
+    }
+
+    loginSubmitting = true;
+    loginSubmitBtn.disabled = true;
+    loginSubmitBtn.textContent = "로그인 중...";
+
+    try {
+      const { data, error } = await signInWithEmail({ email, password });
+
+      if (error) {
+        console.error(error);
+        showMessage(loginMessage, describeAuthError(error, "login"), true);
+        return;
+      }
+
+      if (data?.session) {
+        goToReturnTo();
+        return;
+      }
+
+      showMessage(loginMessage, "이메일 확인 후 로그인해 주세요.", true);
+    } catch (err) {
+      console.error(err);
+      showMessage(loginMessage, "로그인하지 못했습니다. 잠시 후 다시 시도해 주세요.", true);
+    } finally {
+      loginSubmitting = false;
+      loginSubmitBtn.disabled = false;
+      loginSubmitBtn.textContent = "이메일로 로그인";
+    }
+  });
+
+  // — 회원가입 —
+  const signupForm = document.getElementById("signup-form");
+  const signupMessage = document.getElementById("signup-message");
+  const signupSubmitBtn = document.getElementById("signup-submit-btn");
+  const signupPasswordInput = document.getElementById("signup-password");
+  const signupPasswordConfirmInput = document.getElementById("signup-password-confirm");
+  const PASSWORD_POLICY = Object.freeze({
+    minLength: 8,
+    requirements: [/[a-z]/, /[A-Z]/, /[0-9]/, /[^A-Za-z0-9\s]/],
+    hintMessage: "비밀번호는 8자 이상이며 영문 대문자, 소문자, 숫자, 특수문자를 각각 1개 이상 포함해야 합니다.",
+    errorMessage: "비밀번호는 8자 이상이며 영문 대문자, 소문자, 숫자, 특수문자를 각각 포함해야 합니다.",
+  });
+  document.getElementById("signup-password-hint").textContent = PASSWORD_POLICY.hintMessage;
+  let signupSubmitting = false;
+  let passwordErrorType = null;
+
+  function meetsPasswordPolicy(password) {
+    return password.length >= PASSWORD_POLICY.minLength
+      && PASSWORD_POLICY.requirements.every((pattern) => pattern.test(password));
+  }
+
+  function clearPasswordError() {
+    if (!passwordErrorType) return;
+    passwordErrorType = null;
+    signupPasswordInput.removeAttribute("aria-invalid");
+    signupPasswordConfirmInput.removeAttribute("aria-invalid");
+    signupMessage.textContent = "";
+    signupMessage.hidden = true;
+  }
+
+  function clearResolvedPasswordError() {
+    const policyResolved = passwordErrorType === "policy" && meetsPasswordPolicy(signupPasswordInput.value);
+    const mismatchResolved = passwordErrorType === "mismatch"
+      && signupPasswordInput.value === signupPasswordConfirmInput.value;
+    if (policyResolved || mismatchResolved) {
+      clearPasswordError();
+    }
+  }
+
+  signupPasswordInput.addEventListener("input", clearResolvedPasswordError);
+  signupPasswordConfirmInput.addEventListener("input", clearResolvedPasswordError);
+
+  signupForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (signupSubmitting) return;
+
+    const emailInput = document.getElementById("signup-email");
+    const nicknameInput = document.getElementById("signup-nickname");
+    const passwordInput = signupPasswordInput;
+    const passwordConfirmInput = signupPasswordConfirmInput;
+    const agreeTerms = document.getElementById("agree-terms");
+    const agreePrivacy = document.getElementById("agree-privacy");
+
+    const email = emailInput.value.trim();
+    const nickname = nicknameInput.value.trim();
+    const password = passwordInput.value;
+    const passwordConfirm = passwordConfirmInput.value;
+
+    clearPasswordError();
+    signupMessage.hidden = true;
+
+    if (!EMAIL_REGEX.test(email)) {
+      showMessage(signupMessage, "올바른 이메일 형식이 아닙니다.", true);
+      return;
+    }
+    if (!nickname) {
+      showMessage(signupMessage, "닉네임을 입력해 주세요.", true);
+      return;
+    }
+    if (!password) {
+      showMessage(signupMessage, "비밀번호를 입력해 주세요.", true);
+      passwordInput.focus();
+      return;
+    }
+    if (!meetsPasswordPolicy(password)) {
+      passwordErrorType = "policy";
+      passwordInput.setAttribute("aria-invalid", "true");
+      showMessage(signupMessage, PASSWORD_POLICY.errorMessage, true);
+      passwordInput.focus();
+      return;
+    }
+    if (!passwordConfirm) {
+      showMessage(signupMessage, "비밀번호 확인을 입력해 주세요.", true);
+      passwordConfirmInput.focus();
+      return;
+    }
+    if (password !== passwordConfirm) {
+      passwordErrorType = "mismatch";
+      passwordConfirmInput.setAttribute("aria-invalid", "true");
+      showMessage(signupMessage, "비밀번호가 서로 일치하지 않습니다.", true);
+      passwordConfirmInput.focus();
+      return;
+    }
+    if (!agreeTerms.checked || !agreePrivacy.checked) {
+      showMessage(signupMessage, "필수 약관에 동의해 주세요.", true);
+      return;
+    }
+
+    signupSubmitting = true;
+    signupSubmitBtn.disabled = true;
+    signupSubmitBtn.textContent = "가입 처리 중...";
+
+    try {
+      const { data, error } = await signUpWithEmail({ email, password, nickname });
+
+      // 성공/실패와 무관하게 비밀번호는 화면에 남기지 않는다.
+      passwordInput.value = "";
+      passwordConfirmInput.value = "";
+
+      if (error) {
+        console.error(error);
+        showMessage(signupMessage, describeAuthError(error, "signup"), true);
+        return;
+      }
+
+      if (data?.session) {
+        // 이메일 확인이 꺼져 있는 운영 설정: 가입과 동시에 로그인 처리
+        goToReturnTo();
+        return;
+      }
+
+      signupForm.hidden = true;
+      showMessage(signupMessage, "가입 요청이 접수되었습니다. 이메일함에서 인증 링크를 확인해 주세요.", false);
+    } catch (err) {
+      console.error(err);
+      showMessage(signupMessage, "회원가입을 완료하지 못했습니다. 잠시 후 다시 시도해 주세요.", true);
+    } finally {
+      signupSubmitting = false;
+      signupSubmitBtn.disabled = false;
+      signupSubmitBtn.textContent = "회원가입";
+    }
+  });
+</script>
+<script>
+  (function(){
+    var btn = document.getElementById("nav-toggle");
+    var menu = document.getElementById("nav-links");
+    if (!btn || !menu) return;
+    btn.addEventListener("click", function(){
+      var open = btn.getAttribute("aria-expanded") === "true";
+      btn.setAttribute("aria-expanded", String(!open));
+      btn.setAttribute("aria-label", open ? "메뉴 열기" : "메뉴 닫기");
+      menu.classList.toggle("nav-open", !open);
+    });
+  })();
+</script>
+</body>
+</html>
