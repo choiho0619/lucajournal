@@ -6,7 +6,7 @@ const isPasswordResetPage = /^\/auth(?:\.html)?$/.test(window.location.pathname)
 
 // 현재 페이지(경로+쿼리)를 returnTo로 실어 통합 인증 페이지로 보낸다.
 // 항상 같은 origin의 pathname+search에서만 만들어지므로 외부 URL이 섞일 수 없다.
-function buildAuthPageUrl(mode) {
+export function buildAuthPageUrl(mode) {
   const returnTo = window.location.pathname + window.location.search;
   const params = new URLSearchParams({ returnTo });
   if (mode) params.set("mode", mode);
