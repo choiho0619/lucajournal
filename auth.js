@@ -3,6 +3,18 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./supabase-config.js";
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+export const PASSWORD_POLICY = Object.freeze({
+  minLength: 8,
+  requirements: [/[a-z]/, /[A-Z]/, /[0-9]/, /[^A-Za-z0-9\s]/],
+  hintMessage: "비밀번호는 8자 이상이며 영문 대문자, 소문자, 숫자, 특수문자를 각각 1개 이상 포함해야 합니다.",
+  errorMessage: "비밀번호는 8자 이상이며 영문 대문자, 소문자, 숫자, 특수문자를 각각 포함해야 합니다.",
+});
+
+export function meetsPasswordPolicy(password) {
+  return password.length >= PASSWORD_POLICY.minLength
+    && PASSWORD_POLICY.requirements.every((pattern) => pattern.test(password));
+}
+
 const AUTH_MODE_STORAGE_KEY = "luca-auth-mode";
 const AUTH_NOTICE_STORAGE_KEY = "luca-auth-notice";
 const PASSWORD_RECOVERY_MODE = "password-recovery";

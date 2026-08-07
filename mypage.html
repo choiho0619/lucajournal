@@ -138,8 +138,11 @@ a:hover{color:var(--color-accent);text-decoration:underline;}
 .field input{width:100%;box-sizing:border-box;font-family:inherit;font-size:15px;
   padding:10px 12px;border:1px solid var(--color-divider);border-radius:var(--radius-md);background:transparent;color:inherit;}
 .field .field-static{font-size:15px;margin:0;color:color-mix(in srgb, var(--color-text) 88%, transparent);}
+.field-hint{margin:7px 0 0;font-size:12px;line-height:1.55;
+  color:color-mix(in srgb, var(--color-text) 55%, transparent);word-break:keep-all;}
 .form-actions{display:flex;gap:12px;margin-top:8px;}
 .form-message{font-size:14px;margin:16px 0 0;}
+.password-change{margin-top:32px;padding-top:32px;border-top:1px solid var(--color-divider);}
 
 /* — comments (post.html 관례 재사용) — */
 .comments-heading{font-size:20px;font-weight:600;margin:0 0 24px;}
@@ -233,6 +236,24 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
             <button type="button" id="save-profile-btn" class="btn btn-primary">저장</button>
           </div>
           <p id="profile-message" class="form-message" hidden></p>
+          <div class="password-change">
+            <h3 class="comments-heading">비밀번호 변경</h3>
+            <form id="password-change-form" novalidate>
+              <div class="field">
+                <label for="new-password-input">새 비밀번호</label>
+                <input id="new-password-input" type="password" autocomplete="new-password" aria-describedby="new-password-hint" required>
+                <p id="new-password-hint" class="field-hint"></p>
+              </div>
+              <div class="field">
+                <label for="new-password-confirm-input">새 비밀번호 확인</label>
+                <input id="new-password-confirm-input" type="password" autocomplete="new-password" required>
+              </div>
+              <div class="form-actions">
+                <button type="submit" id="password-change-btn" class="btn btn-primary">비밀번호 변경</button>
+              </div>
+            </form>
+            <p id="password-change-message" class="form-message" hidden role="status"></p>
+          </div>
         </div>
       </section>
     </div>
@@ -271,7 +292,16 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 
 <script type="module" src="./auth-ui.js"></script>
 <script type="module">
-  import { supabase, signInWithGoogle, isAuthenticatedSession, redirectPasswordRecoveryToReset } from "./auth.js";
+  import {
+    supabase,
+    signInWithGoogle,
+    isAuthenticatedSession,
+    redirectPasswordRecoveryToReset,
+    updatePassword,
+    describeAuthError,
+    PASSWORD_POLICY,
+    meetsPasswordPolicy,
+  } from "./auth.js";
   import { refreshAuthUI } from "./auth-ui.js";
 
   let currentUser = null;
@@ -501,6 +531,69 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
   }
 
   document.getElementById("save-profile-btn").addEventListener("click", saveDisplayName);
+
+  const passwordChangeForm = document.getElementById("password-change-form");
+  const newPasswordInput = document.getElementById("new-password-input");
+  const newPasswordConfirmInput = document.getElementById("new-password-confirm-input");
+  const passwordChangeBtn = document.getElementById("password-change-btn");
+  const passwordChangeMessage = document.getElementById("password-change-message");
+  let passwordChangeSubmitting = false;
+
+  document.getElementById("new-password-hint").textContent = PASSWORD_POLICY.hintMessage;
+
+  function showPasswordChangeMessage(text, isError) {
+    passwordChangeMessage.textContent = text;
+    passwordChangeMessage.style.color = isError ? "#b3261e" : "";
+    passwordChangeMessage.hidden = false;
+  }
+
+  passwordChangeForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (passwordChangeSubmitting) return;
+
+    const password = newPasswordInput.value;
+    const passwordConfirm = newPasswordConfirmInput.value;
+    passwordChangeMessage.hidden = true;
+
+    if (!password || !passwordConfirm) {
+      showPasswordChangeMessage("새 비밀번호와 새 비밀번호 확인을 모두 입력해 주세요.", true);
+      return;
+    }
+    if (!meetsPasswordPolicy(password)) {
+      showPasswordChangeMessage(PASSWORD_POLICY.errorMessage, true);
+      newPasswordInput.focus();
+      return;
+    }
+    if (password !== passwordConfirm) {
+      showPasswordChangeMessage("비밀번호가 서로 일치하지 않습니다.", true);
+      newPasswordConfirmInput.focus();
+      return;
+    }
+
+    passwordChangeSubmitting = true;
+    passwordChangeBtn.disabled = true;
+    passwordChangeBtn.textContent = "변경 중...";
+
+    try {
+      const { error } = await updatePassword(password);
+      if (error) {
+        console.error(error);
+        showPasswordChangeMessage(describeAuthError(error, "password-reset-update"), true);
+        return;
+      }
+
+      newPasswordInput.value = "";
+      newPasswordConfirmInput.value = "";
+      showPasswordChangeMessage("비밀번호가 변경되었습니다.", false);
+    } catch (error) {
+      console.error(error);
+      showPasswordChangeMessage(describeAuthError(error, "password-reset-update"), true);
+    } finally {
+      passwordChangeSubmitting = false;
+      passwordChangeBtn.disabled = false;
+      passwordChangeBtn.textContent = "비밀번호 변경";
+    }
+  });
 
   document.getElementById("my-comments-list").addEventListener("click", async (e) => {
     const btn = e.target.closest("button[data-action='trash']");

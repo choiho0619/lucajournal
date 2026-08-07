@@ -334,6 +334,8 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     consumeAuthNotice,
     describeAuthError,
     onAuthStateChanged,
+    PASSWORD_POLICY,
+    meetsPasswordPolicy,
   } from "./auth.js";
 
   // returnTo는 반드시 "/"로 시작하고 "//"나 "scheme://"를 포함하지 않는 내부 상대경로만 허용한다.
@@ -484,20 +486,9 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
   const signupSubmitBtn = document.getElementById("signup-submit-btn");
   const signupPasswordInput = document.getElementById("signup-password");
   const signupPasswordConfirmInput = document.getElementById("signup-password-confirm");
-  const PASSWORD_POLICY = Object.freeze({
-    minLength: 8,
-    requirements: [/[a-z]/, /[A-Z]/, /[0-9]/, /[^A-Za-z0-9\s]/],
-    hintMessage: "비밀번호는 8자 이상이며 영문 대문자, 소문자, 숫자, 특수문자를 각각 1개 이상 포함해야 합니다.",
-    errorMessage: "비밀번호는 8자 이상이며 영문 대문자, 소문자, 숫자, 특수문자를 각각 포함해야 합니다.",
-  });
   document.getElementById("signup-password-hint").textContent = PASSWORD_POLICY.hintMessage;
   let signupSubmitting = false;
   let passwordErrorType = null;
-
-  function meetsPasswordPolicy(password) {
-    return password.length >= PASSWORD_POLICY.minLength
-      && PASSWORD_POLICY.requirements.every((pattern) => pattern.test(password));
-  }
 
   function clearPasswordError() {
     if (!passwordErrorType) return;

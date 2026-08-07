@@ -3,6 +3,7 @@ import { supabase, signOut, getAuthState, onAuthStateChanged } from "./auth.js";
 const authArea = document.getElementById("auth-area");
 const isPasswordResetPage = /^\/auth(?:\.html)?$/.test(window.location.pathname)
   && new URLSearchParams(window.location.search).get("mode") === "reset";
+const isMyPage = /^\/mypage(?:\.html)?\/?$/.test(window.location.pathname);
 
 // 현재 페이지(경로+쿼리)를 returnTo로 실어 통합 인증 페이지로 보낸다.
 // 항상 같은 origin의 pathname+search에서만 만들어지므로 외부 URL이 섞일 수 없다.
@@ -42,7 +43,10 @@ function renderLoggedIn(name) {
   logoutBtn.type = "button";
   logoutBtn.className = "btn btn-secondary";
   logoutBtn.textContent = "로그아웃";
-  logoutBtn.addEventListener("click", () => signOut());
+  logoutBtn.addEventListener("click", async () => {
+    const { error } = await signOut();
+    if (!error && isMyPage) window.location.href = "/";
+  });
 
   authArea.appendChild(nameEl);
   authArea.appendChild(logoutBtn);
