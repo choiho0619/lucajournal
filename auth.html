@@ -325,6 +325,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     signInWithGoogle,
     signInWithEmail,
     signUpWithEmail,
+    checkDisplayNameAvailable,
     signOut,
     resetPasswordForEmail,
     updatePassword,
@@ -569,9 +570,24 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 
     signupSubmitting = true;
     signupSubmitBtn.disabled = true;
-    signupSubmitBtn.textContent = "가입 처리 중...";
+    signupSubmitBtn.textContent = "닉네임 확인 중...";
 
     try {
+      const { data: isAvailable, error: availabilityError } = await checkDisplayNameAvailable(nickname);
+
+      if (availabilityError) {
+        console.error(availabilityError);
+        showMessage(signupMessage, "닉네임 사용 여부를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.", true);
+        return;
+      }
+
+      if (!isAvailable) {
+        showMessage(signupMessage, "이미 사용 중인 닉네임입니다.", true);
+        return;
+      }
+
+      signupSubmitBtn.textContent = "가입 처리 중...";
+
       const { data, error } = await signUpWithEmail({ email, password, nickname });
 
       // 성공/실패와 무관하게 비밀번호는 화면에 남기지 않는다.

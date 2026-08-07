@@ -92,6 +92,10 @@ export function onAuthStateChanged(callback) {
   });
 }
 
+export function checkDisplayNameAvailable(nickname) {
+  return supabase.rpc("is_display_name_available", { p_display_name: nickname });
+}
+
 export function signUpWithEmail({ email, password, nickname }) {
   return supabase.auth.signUp({
     email,
