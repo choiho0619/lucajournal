@@ -282,7 +282,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
           </div>
           <div class="field">
             <label for="signup-nickname">닉네임</label>
-            <input id="signup-nickname" type="text" maxlength="30" autocomplete="nickname" required>
+            <input id="signup-nickname" type="text" maxlength="20" autocomplete="nickname" required>
           </div>
           <div class="field">
             <label for="signup-password">비밀번호</label>
@@ -337,6 +337,8 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     onAuthStateChanged,
     PASSWORD_POLICY,
     meetsPasswordPolicy,
+    NICKNAME_POLICY,
+    meetsNicknamePolicy,
   } from "./auth.js";
 
   // returnTo는 반드시 "/"로 시작하고 "//"나 "scheme://"를 포함하지 않는 내부 상대경로만 허용한다.
@@ -535,8 +537,9 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
       showMessage(signupMessage, "올바른 이메일 형식이 아닙니다.", true);
       return;
     }
-    if (!nickname) {
-      showMessage(signupMessage, "닉네임을 입력해 주세요.", true);
+    if (!meetsNicknamePolicy(nickname)) {
+      showMessage(signupMessage, NICKNAME_POLICY.errorMessage, true);
+      nicknameInput.focus();
       return;
     }
     if (!password) {

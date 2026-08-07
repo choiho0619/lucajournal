@@ -230,7 +230,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
         <div id="profile-area" hidden>
           <div class="field">
             <label for="display-name-input">닉네임</label>
-            <input id="display-name-input" type="text" maxlength="30" />
+            <input id="display-name-input" type="text" maxlength="20" />
           </div>
           <div class="field">
             <label>이메일</label>
@@ -317,6 +317,8 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     describeAuthError,
     PASSWORD_POLICY,
     meetsPasswordPolicy,
+    NICKNAME_POLICY,
+    meetsNicknamePolicy,
   } from "./auth.js";
   import { refreshAuthUI } from "./auth-ui.js";
 
@@ -664,8 +666,8 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 
     document.getElementById("profile-message").hidden = true;
 
-    if (!value || value.length > 30) {
-      showProfileMessage("닉네임은 1~30자로 입력해주세요", true);
+    if (!meetsNicknamePolicy(value)) {
+      showProfileMessage(NICKNAME_POLICY.errorMessage, true);
       return;
     }
 

@@ -15,6 +15,20 @@ export function meetsPasswordPolicy(password) {
     && PASSWORD_POLICY.requirements.every((pattern) => pattern.test(password));
 }
 
+export const NICKNAME_POLICY = Object.freeze({
+  minLength: 2,
+  maxLength: 20,
+  pattern: /^[가-힣A-Za-z0-9 _-]+$/,
+  errorMessage: "닉네임은 2~20자의 한글, 영문, 숫자, 공백, 밑줄(_), 하이픈(-)만 사용할 수 있습니다.",
+});
+
+export function meetsNicknamePolicy(nickname) {
+  const normalized = nickname.trim();
+  return normalized.length >= NICKNAME_POLICY.minLength
+    && normalized.length <= NICKNAME_POLICY.maxLength
+    && NICKNAME_POLICY.pattern.test(normalized);
+}
+
 const AUTH_MODE_STORAGE_KEY = "luca-auth-mode";
 const AUTH_NOTICE_STORAGE_KEY = "luca-auth-notice";
 const PASSWORD_RECOVERY_MODE = "password-recovery";
