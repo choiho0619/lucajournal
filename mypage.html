@@ -240,6 +240,14 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
             <label>등급</label>
             <p id="profile-role" class="field-static"></p>
           </div>
+          <div class="field">
+            <label>가입일</label>
+            <p id="profile-created-at" class="field-static"></p>
+          </div>
+          <div class="field">
+            <label>로그인 방식</label>
+            <p id="profile-provider" class="field-static"></p>
+          </div>
           <div class="form-actions">
             <button type="button" id="save-profile-btn" class="btn btn-primary">저장</button>
           </div>
@@ -329,6 +337,23 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     if (role === "writer") return "작성자";
     if (role === "member") return "회원";
     return role || "-";
+  }
+
+  function formatJoinDate(value) {
+    if (!value) return "-";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "-";
+    return new Intl.DateTimeFormat("ko-KR", {
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+    }).format(date);
+  }
+
+  function loginProviderLabel(provider) {
+    if (provider === "google") return "Google";
+    if (provider === "email") return "이메일";
+    return "-";
   }
 
   async function fetchMyComments(userId, isDeleted) {
@@ -621,6 +646,8 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     document.getElementById("display-name-input").value = data.display_name || "";
     document.getElementById("profile-email").textContent = currentUser.email || "";
     document.getElementById("profile-role").textContent = roleLabel(data.role);
+    document.getElementById("profile-created-at").textContent = formatJoinDate(currentUser.created_at);
+    document.getElementById("profile-provider").textContent = loginProviderLabel(currentUser.app_metadata?.provider);
   }
 
   function showProfileMessage(text, isError) {
