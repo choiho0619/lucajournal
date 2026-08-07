@@ -681,7 +681,11 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
         .eq("id", currentUser.id);
 
       if (error) {
-        showProfileMessage("저장에 실패했습니다", true);
+        if (error.code === "23505") {
+          showProfileMessage("이미 사용 중인 닉네임입니다.", true);
+        } else {
+          showProfileMessage("저장에 실패했습니다", true);
+        }
         return;
       }
 
