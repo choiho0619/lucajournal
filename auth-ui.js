@@ -34,16 +34,19 @@ function renderLoggedIn(name) {
 
   const nameEl = document.createElement("a");
   nameEl.href = "/mypage";
-  nameEl.className = "nav-links";
+  nameEl.className = "nav-links auth-user-name";
   nameEl.style.fontSize = "14.5px";
   nameEl.style.color = "#201f1d";
   nameEl.textContent = name;
+  nameEl.title = name;
 
-  const logoutBtn = document.createElement("button");
-  logoutBtn.type = "button";
-  logoutBtn.className = "btn btn-secondary";
+  const logoutBtn = document.createElement("a");
+  logoutBtn.href = "#";
+  logoutBtn.setAttribute("role", "button");
+  logoutBtn.className = "btn btn-secondary auth-logout-button";
   logoutBtn.textContent = "로그아웃";
-  logoutBtn.addEventListener("click", async () => {
+  logoutBtn.addEventListener("click", async (e) => {
+    e.preventDefault();
     const { error } = await signOut();
     if (!error && isMyPage) window.location.href = "/";
   });

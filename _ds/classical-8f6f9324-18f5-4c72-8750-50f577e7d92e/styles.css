@@ -65,11 +65,22 @@
   --shadow-lg: 0 12px 32px color-mix(in srgb, #2d2b2b 22%, transparent);
 }
 
+html { scrollbar-gutter: stable; }
+
 body {
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-body);
 }
+
+#auth-area { width: 229px; min-height: 34.5px; margin-left: -73px; flex: 0 0 229px; justify-content: flex-end; }
+.auth-user-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.auth-logout-button { flex-shrink: 0; white-space: nowrap; }
+
+@media (max-width: 640px) {
+  #auth-area { width: auto; margin-left: 0; flex-basis: auto; }
+}
+
 h1, h2, h3, h4 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); }
 
 .plate{filter:sepia(0.22) saturate(0.82) contrast(1.05);box-sizing:border-box;
@@ -251,4 +262,3 @@ textarea.input { min-height: 90px; resize: vertical; }
 }
 .dialog-body { font-size: 14px; opacity: 0.85; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-2); }
-
