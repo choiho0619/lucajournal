@@ -10,6 +10,7 @@ const STATIC_URLS = [
   { loc: `${SITE_URL}/category?code=PERSPECTIVE`, lastmod: "2026-07-14" },
   { loc: `${SITE_URL}/category?code=HERITAGE`, lastmod: "2026-07-14" },
   { loc: `${SITE_URL}/category?code=APOLOGETICS`, lastmod: "2026-07-14" },
+  { loc: `${SITE_URL}/category?code=CULTURE`, lastmod: "2026-07-24" },
   { loc: `${SITE_URL}/category?code=NOTICE`, lastmod: "2026-07-14" },
 ];
 
