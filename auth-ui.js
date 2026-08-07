@@ -34,7 +34,7 @@ function renderLoggedIn(name) {
 
   const nameEl = document.createElement("a");
   nameEl.href = "/mypage";
-  nameEl.className = "nav-links auth-user-name";
+  nameEl.className = "auth-user-name";
   nameEl.style.fontSize = "14.5px";
   nameEl.style.color = "#201f1d";
   nameEl.textContent = name;

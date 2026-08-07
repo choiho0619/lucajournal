@@ -74,11 +74,12 @@ body {
 }
 
 #auth-area { width: 229px; min-height: 34.5px; margin-left: -73px; flex: 0 0 229px; justify-content: flex-end; }
-.auth-user-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.auth-user-name { display: flex; align-items: center; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .auth-logout-button { flex-shrink: 0; white-space: nowrap; }
 
 @media (max-width: 640px) {
   #auth-area { width: auto; margin-left: 0; flex-basis: auto; }
+  .auth-user-name { display: block; max-width: 70px; }
 }
 
 h1, h2, h3, h4 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); }
