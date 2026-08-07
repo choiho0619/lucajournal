@@ -333,13 +333,16 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
       .order("created_at", { ascending: false });
 
     if (!nested.error) {
-      return (nested.data ?? []).map((c) => ({
-        id: c.id,
-        content: c.content,
-        created_at: c.created_at,
-        post_title: c.posts?.title ?? null,
-        post_slug: c.posts?.slug ?? null,
-      }));
+      return {
+        comments: (nested.data ?? []).map((c) => ({
+          id: c.id,
+          content: c.content,
+          created_at: c.created_at,
+          post_title: c.posts?.title ?? null,
+          post_slug: c.posts?.slug ?? null,
+        })),
+        error: null,
+      };
     }
 
     // 2차 폴백: 중첩 select가 FK 문제로 실패하는 경우, post_id 목록으로 posts를 별도 조회
@@ -352,7 +355,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 
     if (plain.error) {
       console.error(plain.error);
-      return [];
+      return { comments: [], error: plain.error };
     }
 
     const rows = plain.data ?? [];
@@ -366,13 +369,16 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
       postMap = Object.fromEntries((posts ?? []).map((p) => [p.id, p]));
     }
 
-    return rows.map((r) => ({
-      id: r.id,
-      content: r.content,
-      created_at: r.created_at,
-      post_title: postMap[r.post_id]?.title ?? null,
-      post_slug: postMap[r.post_id]?.slug ?? null,
-    }));
+    return {
+      comments: rows.map((r) => ({
+        id: r.id,
+        content: r.content,
+        created_at: r.created_at,
+        post_title: postMap[r.post_id]?.title ?? null,
+        post_slug: postMap[r.post_id]?.slug ?? null,
+      })),
+      error: null,
+    };
   }
 
   function buildCommentItem(comment) {
@@ -459,14 +465,44 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     }
   }
 
+  function renderCommentListError(listEl, message) {
+    listEl.innerHTML = "";
+    const error = document.createElement("p");
+    error.className = "comment-empty";
+    error.style.color = "#b3261e";
+    error.textContent = message;
+    error.setAttribute("role", "status");
+    listEl.appendChild(error);
+  }
+
   async function reloadMyComments() {
-    const list = await fetchMyComments(currentUser.id, false);
-    renderCommentListInto(document.getElementById("my-comments-list"), list, "아직 작성한 댓글이 없습니다", "active");
+    const listEl = document.getElementById("my-comments-list");
+    try {
+      const result = await fetchMyComments(currentUser.id, false);
+      if (result.error) {
+        renderCommentListError(listEl, "댓글을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+        return;
+      }
+      renderCommentListInto(listEl, result.comments, "아직 작성한 댓글이 없습니다", "active");
+    } catch (error) {
+      console.error(error);
+      renderCommentListError(listEl, "댓글을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    }
   }
 
   async function reloadTrash() {
-    const list = await fetchMyComments(currentUser.id, true);
-    renderCommentListInto(document.getElementById("trash-comments-list"), list, "휴지통이 비어 있습니다", "trash");
+    const listEl = document.getElementById("trash-comments-list");
+    try {
+      const result = await fetchMyComments(currentUser.id, true);
+      if (result.error) {
+        renderCommentListError(listEl, "휴지통을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+        return;
+      }
+      renderCommentListInto(listEl, result.comments, "휴지통이 비어 있습니다", "trash");
+    } catch (error) {
+      console.error(error);
+      renderCommentListError(listEl, "휴지통을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    }
   }
 
   async function reloadBoth() {
@@ -513,21 +549,30 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     }
 
     saveBtn.disabled = true;
-    // display_name 단일 필드만 전송: 다른 컬럼은 GRANT로 update가 거부되어
-    // 함께 보내면 전체 요청이 실패한다.
-    const { error } = await supabase
-      .from("profiles")
-      .update({ display_name: value })
-      .eq("id", currentUser.id);
-    saveBtn.disabled = false;
+    saveBtn.textContent = "저장 중...";
 
-    if (error) {
+    try {
+      // display_name 단일 필드만 전송: 다른 컬럼은 GRANT로 update가 거부되어
+      // 함께 보내면 전체 요청이 실패한다.
+      const { error } = await supabase
+        .from("profiles")
+        .update({ display_name: value })
+        .eq("id", currentUser.id);
+
+      if (error) {
+        showProfileMessage("저장에 실패했습니다", true);
+        return;
+      }
+
+      showProfileMessage("저장되었습니다", false);
+      await refreshAuthUI();
+    } catch (error) {
+      console.error(error);
       showProfileMessage("저장에 실패했습니다", true);
-      return;
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = "저장";
     }
-
-    showProfileMessage("저장되었습니다", false);
-    await refreshAuthUI();
   }
 
   document.getElementById("save-profile-btn").addEventListener("click", saveDisplayName);
