@@ -156,6 +156,14 @@ a:hover{color:var(--color-accent);text-decoration:underline;}
 .comment-delete-btn{background:none;border:0;padding:0;margin-top:8px;font-size:12.5px;cursor:pointer;
   text-decoration:underline;color:color-mix(in srgb, var(--color-text) 55%, transparent);}
 .comment-delete-btn:hover{color:#b3261e;}
+.comment-edit-btn:hover{color:var(--color-accent-700);}
+.comment-edit-textarea{width:100%;box-sizing:border-box;font-family:inherit;font-size:16px;line-height:1.75;
+  min-height:80px;resize:vertical;padding:10px 12px;border:1px solid var(--color-divider);
+  border-radius:var(--radius-md);background:transparent;color:inherit;margin:0 0 8px;}
+.comment-edit-actions{display:flex;gap:14px;align-items:center;margin-top:8px;}
+.comment-edit-actions .btn{min-height:44px;}
+.comment-edit-actions .comment-delete-btn{margin-top:0;min-height:36px;display:inline-flex;align-items:center;}
+.comment-edit-message{font-size:13.5px;margin:10px 0 0;color:#b3261e;}
 .comment-empty{font-size:14.5px;padding:8px 0;color:color-mix(in srgb, var(--color-text) 60%, transparent);}
 .comment-skeleton-line{height:16px;margin:0 0 14px;}
 
@@ -434,13 +442,99 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
       actions.style.cssText = "margin-top:8px;display:flex;gap:16px;";
 
       if (mode === "active") {
+        const editBtn = document.createElement("button");
+        editBtn.type = "button";
+        editBtn.className = "comment-delete-btn comment-edit-btn";
+        editBtn.textContent = "수정";
+
         const trashBtn = document.createElement("button");
         trashBtn.type = "button";
         trashBtn.className = "comment-delete-btn";
         trashBtn.textContent = "휴지통으로 이동";
         trashBtn.dataset.commentId = comment.id;
         trashBtn.dataset.action = "trash";
+        actions.appendChild(editBtn);
         actions.appendChild(trashBtn);
+
+        editBtn.addEventListener("click", () => {
+          const body = item.querySelector(".comment-body");
+          const textarea = document.createElement("textarea");
+          textarea.className = "comment-edit-textarea";
+          textarea.value = comment.content;
+
+          const editActions = document.createElement("div");
+          editActions.className = "comment-edit-actions";
+
+          const saveBtn = document.createElement("button");
+          saveBtn.type = "button";
+          saveBtn.className = "btn btn-primary";
+          saveBtn.textContent = "저장";
+
+          const cancelBtn = document.createElement("button");
+          cancelBtn.type = "button";
+          cancelBtn.className = "comment-delete-btn comment-edit-btn";
+          cancelBtn.textContent = "취소";
+
+          const editMessage = document.createElement("p");
+          editMessage.className = "comment-edit-message";
+          editMessage.hidden = true;
+
+          editActions.append(saveBtn, cancelBtn);
+          body.hidden = true;
+          actions.hidden = true;
+          item.insertBefore(textarea, actions);
+          item.insertBefore(editActions, actions);
+          item.insertBefore(editMessage, actions);
+          textarea.focus();
+
+          function closeEditMode() {
+            textarea.remove();
+            editActions.remove();
+            editMessage.remove();
+            body.hidden = false;
+            actions.hidden = false;
+          }
+
+          cancelBtn.addEventListener("click", closeEditMode);
+
+          saveBtn.addEventListener("click", async () => {
+            const newContent = textarea.value.trim();
+            if (!newContent) {
+              editMessage.textContent = "내용을 입력하세요";
+              editMessage.hidden = false;
+              return;
+            }
+
+            editMessage.hidden = true;
+            saveBtn.disabled = true;
+            saveBtn.textContent = "저장 중…";
+
+            try {
+              const { error } = await supabase
+                .from("comments")
+                .update({ content: newContent })
+                .eq("id", comment.id);
+
+              if (error) {
+                console.error(error);
+                editMessage.textContent = "댓글 수정에 실패했습니다";
+                editMessage.hidden = false;
+                return;
+              }
+
+              comment.content = newContent;
+              body.textContent = newContent;
+              closeEditMode();
+            } catch (error) {
+              console.error(error);
+              editMessage.textContent = "댓글 수정에 실패했습니다";
+              editMessage.hidden = false;
+            } finally {
+              saveBtn.disabled = false;
+              saveBtn.textContent = "저장";
+            }
+          });
+        });
       } else {
         const restoreBtn = document.createElement("button");
         restoreBtn.type = "button";
