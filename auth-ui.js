@@ -11,7 +11,7 @@ export function buildAuthPageUrl(mode) {
   const returnTo = window.location.pathname + window.location.search;
   const params = new URLSearchParams({ returnTo });
   if (mode) params.set("mode", mode);
-  return `/auth.html?${params.toString()}`;
+  return `/auth?${params.toString()}`;
 }
 
 function renderLoggedOut() {

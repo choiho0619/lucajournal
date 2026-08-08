@@ -116,7 +116,7 @@ export function signUpWithEmail({ email, password, nickname }) {
     password,
     options: {
       data: { full_name: nickname },
-      emailRedirectTo: `${window.location.origin}/auth.html`,
+      emailRedirectTo: `${window.location.origin}/auth`,
     },
   });
 }
@@ -126,7 +126,7 @@ export function signInWithEmail({ email, password }) {
 }
 
 function getPasswordResetRedirectUrl() {
-  return new URL("/auth.html?mode=reset", window.location.origin).href;
+  return new URL("/auth?mode=reset", window.location.origin).href;
 }
 
 export function resetPasswordForEmail(email) {

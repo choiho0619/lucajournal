@@ -630,7 +630,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 
   document.getElementById("forgot-password-back-login").addEventListener("click", (e) => {
     e.preventDefault();
-    window.history.replaceState({}, "", "/auth.html");
+    window.history.replaceState({}, "", "/auth");
     showLogin();
   });
 
@@ -803,7 +803,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
   });
 
   document.getElementById("reset-password-back-login").addEventListener("click", () => {
-    window.history.replaceState({}, "", "/auth.html");
+    window.history.replaceState({}, "", "/auth");
     showLogin();
   });
 
