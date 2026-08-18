@@ -213,7 +213,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 <script type="module" src="./auth-ui.js"></script>
 <script type="module">
   import { supabase } from "./auth.js";
-  import { fetchPostsByCategory, renderRecentPosts, fetchMyRole, fetchActiveCategories } from "./posts.js";
+  import { fetchPostsByCategory, renderRecentPosts, fetchMyRole, fetchActiveCategories } from "./posts.js?v=20260818";
 
   function renderNotFound() {
     const header = document.getElementById("category-header");

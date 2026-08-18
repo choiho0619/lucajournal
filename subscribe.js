@@ -1,5 +1,5 @@
 import { supabase, signInWithGoogle, getAuthState, onAuthStateChanged } from "./auth.js";
-import { formatDate } from "./posts.js";
+import { formatDate } from "./posts.js?v=20260818";
 import { buildAuthPageUrl } from "./auth-ui.js";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

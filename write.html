@@ -136,6 +136,10 @@ a:hover{color:var(--color-accent);text-decoration:underline;}
 .form-actions{display:flex;gap:12px;margin-top:8px;}
 .form-actions .btn,#gate-login .btn{min-height:44px;}
 .form-message{font-size:14px;margin:16px 0 0;}
+.audio-kind-options{display:flex;gap:20px;flex-wrap:wrap;}
+.audio-kind-option{display:flex;align-items:center;gap:8px;min-height:44px;cursor:pointer;font-size:15px;font-weight:400;color:inherit;}
+.audio-kind-option input[type="radio"]{width:18px;height:18px;flex:none;accent-color:var(--color-accent-700);}
+.audio-kind-hint{margin:6px 0 0;font-size:13px;line-height:1.6;color:color-mix(in srgb, var(--color-text) 60%, transparent);word-break:keep-all;}
 
 footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
   color:color-mix(in srgb, var(--color-text) 60%, transparent);
@@ -217,6 +221,14 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
             <label for="audio-artist-input">아티스트</label>
             <input id="audio-artist-input" type="text" placeholder="아티스트 (선택)" />
           </div>
+          <div class="field" id="audio-kind-field" style="margin:16px 0 0;" hidden>
+            <label>오디오 종류</label>
+            <div class="audio-kind-options">
+              <label class="audio-kind-option"><input type="radio" name="audio-kind" value="song" checked /> 노래</label>
+              <label class="audio-kind-option"><input type="radio" name="audio-kind" value="audiobook" /> 오디오북</label>
+            </div>
+            <p class="audio-kind-hint">오디오북으로 선택하면 메인 화면 플레이리스트에 표시되지 않습니다.</p>
+          </div>
           <p id="audio-message" class="form-message" hidden></p>
         </div>
         <div class="form-actions">
@@ -240,7 +252,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 <script type="module" src="./auth-ui.js"></script>
 <script type="module">
   import { supabase, signInWithGoogle, redirectPasswordRecoveryToReset } from "./auth.js";
-  import { fetchMyRole, fetchActiveCategories, createPost, fetchPostById, updatePost, uploadPostAudio, deletePostAudio } from "./posts.js";
+  import { fetchMyRole, fetchActiveCategories, createPost, fetchPostById, updatePost, uploadPostAudio, deletePostAudio } from "./posts.js?v=20260818";
 
   const gateLogin = document.getElementById("gate-login");
   const gateNoPermission = document.getElementById("gate-no-permission");
@@ -301,6 +313,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     const fileToUpload = selectedAudioFile;
     const capturedAudioTitle = audioTitleInput.value.trim();
     const capturedAudioArtist = audioArtistInput.value.trim();
+    const capturedAudioKind = getSelectedAudioKind();
 
     let resolvedAudioUrl = audioUrl;
     let resolvedAudioTitle = audioTitle;
@@ -333,6 +346,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
           audioUrl: resolvedAudioUrl,
           audioTitle: resolvedAudioTitle,
           audioArtist: resolvedAudioArtist,
+          audioKind: capturedAudioKind,
         })
       : await createPost({
           categoryId: categorySelect.value,
@@ -342,6 +356,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
           audioUrl: resolvedAudioUrl,
           audioTitle: resolvedAudioTitle,
           audioArtist: resolvedAudioArtist,
+          audioKind: capturedAudioKind,
         });
 
     saveDraftBtn.disabled = false;
@@ -431,6 +446,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     existingAudioArtist = post.audio_artist ?? null;
     audioTitleInput.value = existingAudioTitle || "";
     audioArtistInput.value = existingAudioArtist || "";
+    setAudioKind(post.audio_kind);
     updateAudioUI();
   }
 
@@ -443,6 +459,22 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
   const currentAudioTitleEl = document.getElementById("current-audio-title");
   const currentAudioArtistEl = document.getElementById("current-audio-artist");
   const currentAudioPreview = document.getElementById("current-audio-preview");
+  const audioKindField = document.getElementById("audio-kind-field");
+  const audioKindRadios = document.querySelectorAll('input[name="audio-kind"]');
+  const VALID_AUDIO_KINDS = ["song", "audiobook"];
+
+  function getSelectedAudioKind() {
+    const checked = document.querySelector('input[name="audio-kind"]:checked');
+    const value = checked ? checked.value : "song";
+    return VALID_AUDIO_KINDS.includes(value) ? value : "song";
+  }
+
+  function setAudioKind(value) {
+    const normalized = VALID_AUDIO_KINDS.includes(value) ? value : "song";
+    audioKindRadios.forEach((radio) => {
+      radio.checked = radio.value === normalized;
+    });
+  }
 
   function fileNameWithoutExtension(name) {
     return String(name || "").replace(/\.[^/.]+$/, "");
@@ -472,6 +504,9 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
   }
 
   function updateAudioUI() {
+    const effectiveUrl = audioUrl !== undefined ? audioUrl : existingAudioUrl;
+    audioKindField.hidden = !(selectedAudioFile || effectiveUrl);
+
     if (selectedAudioFile) {
       // 새 파일이 선택된 동안에는 현재 오디오 영역을 감추고, 교체될 파일명만 구분해서 보여준다.
       currentAudioCard.hidden = true;
@@ -484,7 +519,6 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
       return;
     }
 
-    const effectiveUrl = audioUrl !== undefined ? audioUrl : existingAudioUrl;
     if (effectiveUrl) {
       const effectiveTitle = audioUrl !== undefined ? audioTitle : existingAudioTitle;
       const effectiveArtist = audioUrl !== undefined ? audioArtist : existingAudioArtist;
@@ -518,6 +552,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     audioInput.value = "";
     audioTitleInput.value = "";
     audioArtistInput.value = "";
+    setAudioKind("song");
     updateAudioUI();
   });
 

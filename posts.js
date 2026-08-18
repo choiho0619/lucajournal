@@ -1,6 +1,11 @@
 import { supabase, isPasswordRecoverySession } from "./auth.js";
 import { SUPABASE_URL } from "./supabase-config.js";
 
+const VALID_AUDIO_KINDS = new Set(["song", "audiobook"]);
+function normalizeAudioKind(value) {
+  return VALID_AUDIO_KINDS.has(value) ? value : "song";
+}
+
 export async function fetchRecentPosts(limit = 10) {
   const { data, error } = await supabase
     .from("posts")
@@ -19,9 +24,10 @@ export async function fetchRecentPosts(limit = 10) {
 export async function fetchPlayablePosts() {
   const { data, error } = await supabase
     .from("posts")
-    .select("id, slug, title, audio_url, audio_title, audio_artist, published_at")
+    .select("id, slug, title, audio_url, audio_title, audio_artist, audio_kind, published_at")
     .eq("status", "published")
     .not("audio_url", "is", null)
+    .neq("audio_kind", "audiobook")
     .order("published_at", { ascending: false });
 
   if (error) {
@@ -98,7 +104,7 @@ export async function fetchPostBySlug(slug) {
 export async function fetchPostById(id) {
   const { data, error } = await supabase
     .from("posts")
-    .select("id, author_id, category_id, title, content, status, audio_url, audio_title, audio_artist, categories(code)")
+    .select("id, author_id, category_id, title, content, status, audio_url, audio_title, audio_artist, audio_kind, categories(code)")
     .eq("id", id)
     .single();
 
@@ -167,7 +173,7 @@ export function generateSlug(dateObj) {
   return `${yyyy}-${mm}-${dd}-${random}`;
 }
 
-export async function createPost({ categoryId, title, content, status, audioUrl, audioTitle, audioArtist }) {
+export async function createPost({ categoryId, title, content, status, audioUrl, audioTitle, audioArtist, audioKind }) {
   if (!title?.trim() || !content?.trim()) {
     return { error: "제목과 본문을 입력해주세요" };
   }
@@ -190,6 +196,7 @@ export async function createPost({ categoryId, title, content, status, audioUrl,
     audio_url: audioUrl ?? null,
     audio_title: audioTitle ?? null,
     audio_artist: audioArtist ?? null,
+    audio_kind: normalizeAudioKind(audioKind),
   };
   console.log("[진단] posts.insert 실제 payload:", insertPayload);
 
@@ -206,7 +213,7 @@ export async function createPost({ categoryId, title, content, status, audioUrl,
   return { data };
 }
 
-export async function updatePost({ id, categoryId, title, content, audioUrl, audioTitle, audioArtist }) {
+export async function updatePost({ id, categoryId, title, content, audioUrl, audioTitle, audioArtist, audioKind }) {
   if (!title?.trim() || !content?.trim()) {
     return { error: "제목과 본문을 입력해주세요" };
   }
@@ -228,6 +235,7 @@ export async function updatePost({ id, categoryId, title, content, audioUrl, aud
   if (audioArtist !== undefined) {
     updatePayload.audio_artist = audioArtist;
   }
+  updatePayload.audio_kind = normalizeAudioKind(audioKind);
 
   const { data, error } = await supabase
     .from("posts")
