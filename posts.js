@@ -143,10 +143,47 @@ export async function fetchPostsByCategoryPaginated(categoryCode, page = 1, page
     .range(from, to);
 
   if (error) {
-    console.error(error);
-    return { posts: [], total: 0 };
+    if (error.code !== "PGRST103") {
+      console.error(error);
+      return { posts: [], total: 0, page };
+    }
+
+    // 요청한 page의 offset이 실제 총 개수를 벗어난 경우(PGRST103): count만 조회해 마지막 페이지를
+    // 계산하고, 그 페이지로 딱 한 번만 재조회한다. 무한 루프 방지를 위해 이 재조회 결과는 그대로 반환한다.
+    const { count: totalCount, error: countError } = await supabase
+      .from("posts")
+      .select("id, categories!inner(code)", { count: "exact", head: true })
+      .eq("status", "published")
+      .eq("categories.code", categoryCode);
+
+    if (countError) {
+      console.error(countError);
+      return { posts: [], total: 0, page: 1 };
+    }
+    if (!totalCount) {
+      return { posts: [], total: 0, page: 1 };
+    }
+
+    const lastPage = Math.max(1, Math.ceil(totalCount / pageSize));
+    const retryFrom = (lastPage - 1) * pageSize;
+    const retryTo = retryFrom + pageSize - 1;
+
+    const { data: retryData, error: retryError } = await supabase
+      .from("posts")
+      .select("slug, title, published_at, categories!inner(name, code)")
+      .eq("status", "published")
+      .eq("categories.code", categoryCode)
+      .order("published_at", { ascending: false })
+      .range(retryFrom, retryTo);
+
+    if (retryError) {
+      console.error(retryError);
+      return { posts: [], total: totalCount, page: 1 };
+    }
+    return { posts: retryData ?? [], total: totalCount, page: lastPage };
   }
-  return { posts: data ?? [], total: count ?? 0 };
+
+  return { posts: data ?? [], total: count ?? 0, page };
 }
 
 export async function fetchMyRole() {

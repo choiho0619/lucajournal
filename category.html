@@ -227,7 +227,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 <script type="module" src="./auth-ui.js"></script>
 <script type="module">
   import { supabase } from "./auth.js";
-  import { fetchPostsByCategoryPaginated, renderRecentPosts, fetchMyRole, fetchActiveCategories } from "./posts.js?v=20260820";
+  import { fetchPostsByCategoryPaginated, renderRecentPosts, fetchMyRole, fetchActiveCategories } from "./posts.js?v=20260821";
 
   const PAGE_SIZE = 12;
 
@@ -339,13 +339,9 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     document.getElementById("category-name").textContent = category.name;
     document.getElementById("category-description").textContent = category.description || "";
 
-    let currentPage = getRequestedPage();
-    let { posts, total } = await fetchPostsByCategoryPaginated(code, currentPage, PAGE_SIZE);
+    const requestedPage = getRequestedPage();
+    const { posts, total, page: currentPage } = await fetchPostsByCategoryPaginated(code, requestedPage, PAGE_SIZE);
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-    if (currentPage > totalPages) {
-      currentPage = totalPages;
-      ({ posts, total } = await fetchPostsByCategoryPaginated(code, currentPage, PAGE_SIZE));
-    }
 
     renderRecentPosts(posts, "category-posts-list", "아직 이 카테고리에 등록된 글이 없습니다");
 
@@ -357,6 +353,12 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 
     renderPagination(code, currentPage, totalPages);
     updateCanonical(code, currentPage);
+
+    // 요청한 page가 범위를 벗어나 서버에서 마지막 페이지로 보정된 경우, 주소창을 실제 적용된
+    // 페이지로 맞춘다. 리로드 없이 이력만 교체(pushState 아님)해 뒤로가기 이력을 더럽히지 않는다.
+    if (currentPage !== requestedPage) {
+      history.replaceState(history.state, "", buildPageUrl(code, currentPage));
+    }
 
     const others = (await fetchActiveCategories()).filter((c) => c.code !== code);
     if (others.length > 0) {

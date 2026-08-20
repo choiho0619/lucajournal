@@ -1,4 +1,4 @@
-import { fetchPlayablePosts } from "./posts.js?v=20260820";
+import { fetchPlayablePosts } from "./posts.js?v=20260821";
 import { supabase, getAuthState, onAuthStateChanged } from "./auth.js";
 
 const LOGIN_REQUIRED_MESSAGE = "루카저널 Playlist는 회원가입 후 로그인하면 이용할 수 있습니다.";
