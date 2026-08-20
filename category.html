@@ -22,6 +22,7 @@
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" id="canonical-link" href="https://lucajournal.com/category">
 <template id="__bundler_thumbnail" data-bg-color="#f3f2f2">
   <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
     <rect width="120" height="120" fill="#f3f2f2"/>
@@ -149,6 +150,18 @@ a:hover{color:var(--color-accent);text-decoration:underline;}
 .skeleton-row-title{height:16px;width:60%;}
 .skeleton-row-date{height:13px;width:70px;flex:none;}
 
+/* — pagination — */
+.pagination{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:32px 0 0;}
+.page-link{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;
+  min-width:44px;min-height:44px;padding:0 10px;border:1px solid var(--color-divider);
+  border-radius:var(--radius-md);font-size:14px;color:var(--color-accent-700);}
+.page-link:hover{border-color:var(--color-accent-700);text-decoration:none;}
+.page-link.is-current{background:var(--color-accent-700);color:var(--color-bg);
+  border-color:var(--color-accent-700);font-weight:600;pointer-events:none;}
+.page-link.is-disabled{color:color-mix(in srgb, var(--color-text) 40%, transparent);pointer-events:none;}
+.page-ellipsis{display:inline-flex;align-items:center;justify-content:center;
+  min-width:44px;min-height:44px;color:color-mix(in srgb, var(--color-text) 50%, transparent);font-size:14px;}
+
 footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
   color:color-mix(in srgb, var(--color-text) 60%, transparent);
   display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:auto;}
@@ -198,6 +211,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
         <div class="skeleton-row"><div class="skeleton skeleton-row-title"></div><div class="skeleton skeleton-row-date"></div></div>
         <div class="skeleton-row"><div class="skeleton skeleton-row-title"></div><div class="skeleton skeleton-row-date"></div></div>
       </div>
+      <nav id="category-pagination" class="pagination" aria-label="페이지 내비게이션" hidden></nav>
       <div id="category-write-link" style="display:flex;justify-content:flex-end;margin-top:20px;"></div>
       <p id="category-others" class="post-date" style="margin:32px 0 0;" hidden></p>
     </section>
@@ -213,7 +227,83 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 <script type="module" src="./auth-ui.js"></script>
 <script type="module">
   import { supabase } from "./auth.js";
-  import { fetchPostsByCategory, renderRecentPosts, fetchMyRole, fetchActiveCategories } from "./posts.js?v=20260818";
+  import { fetchPostsByCategoryPaginated, renderRecentPosts, fetchMyRole, fetchActiveCategories } from "./posts.js?v=20260820";
+
+  const PAGE_SIZE = 12;
+
+  function getRequestedPage() {
+    const raw = new URLSearchParams(window.location.search).get("page");
+    const n = Number(raw);
+    if (!raw || !Number.isInteger(n) || n < 1) return 1;
+    return n;
+  }
+
+  function buildPageUrl(code, pageNum) {
+    const params = new URLSearchParams();
+    params.set("code", code);
+    if (pageNum > 1) params.set("page", String(pageNum));
+    return `/category?${params.toString()}`;
+  }
+
+  function renderPagination(code, currentPage, totalPages) {
+    const nav = document.getElementById("category-pagination");
+    nav.innerHTML = "";
+    if (totalPages <= 1) {
+      nav.hidden = true;
+      return;
+    }
+
+    function makeLink(label, targetPage, { disabled = false, current = false } = {}) {
+      const a = document.createElement("a");
+      a.className = "page-link" + (current ? " is-current" : "") + (disabled ? " is-disabled" : "");
+      a.textContent = label;
+      if (disabled || current) {
+        a.setAttribute("aria-disabled", "true");
+        a.tabIndex = -1;
+      } else {
+        a.href = buildPageUrl(code, targetPage);
+      }
+      if (current) a.setAttribute("aria-current", "page");
+      return a;
+    }
+
+    function makeEllipsis() {
+      const span = document.createElement("span");
+      span.className = "page-ellipsis";
+      span.textContent = "…";
+      return span;
+    }
+
+    nav.appendChild(makeLink("이전", currentPage - 1, { disabled: currentPage <= 1 }));
+
+    const windowStart = Math.max(1, currentPage - 2);
+    const windowEnd = Math.min(totalPages, currentPage + 2);
+
+    if (windowStart > 1) {
+      nav.appendChild(makeLink("1", 1));
+      if (windowStart > 2) nav.appendChild(makeEllipsis());
+    }
+
+    for (let p = windowStart; p <= windowEnd; p++) {
+      nav.appendChild(makeLink(String(p), p, { current: p === currentPage }));
+    }
+
+    if (windowEnd < totalPages) {
+      if (windowEnd < totalPages - 1) nav.appendChild(makeEllipsis());
+      nav.appendChild(makeLink(String(totalPages), totalPages));
+    }
+
+    nav.appendChild(makeLink("다음", currentPage + 1, { disabled: currentPage >= totalPages }));
+
+    nav.hidden = false;
+  }
+
+  function updateCanonical(code, currentPage) {
+    const canonicalLink = document.getElementById("canonical-link");
+    if (!canonicalLink) return;
+    const base = `https://lucajournal.com/category?code=${encodeURIComponent(code)}`;
+    canonicalLink.setAttribute("href", currentPage > 1 ? `${base}&page=${currentPage}` : base);
+  }
 
   function renderNotFound() {
     const header = document.getElementById("category-header");
@@ -249,14 +339,24 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     document.getElementById("category-name").textContent = category.name;
     document.getElementById("category-description").textContent = category.description || "";
 
-    const posts = await fetchPostsByCategory(code);
+    let currentPage = getRequestedPage();
+    let { posts, total } = await fetchPostsByCategoryPaginated(code, currentPage, PAGE_SIZE);
+    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    if (currentPage > totalPages) {
+      currentPage = totalPages;
+      ({ posts, total } = await fetchPostsByCategoryPaginated(code, currentPage, PAGE_SIZE));
+    }
+
     renderRecentPosts(posts, "category-posts-list", "아직 이 카테고리에 등록된 글이 없습니다");
 
-    if (posts.length > 0) {
+    if (total > 0) {
       const countEl = document.getElementById("category-count");
-      countEl.textContent = `총 ${posts.length}건`;
+      countEl.textContent = `총 ${total}건`;
       countEl.hidden = false;
     }
+
+    renderPagination(code, currentPage, totalPages);
+    updateCanonical(code, currentPage);
 
     const others = (await fetchActiveCategories()).filter((c) => c.code !== code);
     if (others.length > 0) {

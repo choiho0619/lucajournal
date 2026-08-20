@@ -130,6 +130,25 @@ export async function fetchPostsByCategory(categoryCode, limit = 20) {
   return data ?? [];
 }
 
+export async function fetchPostsByCategoryPaginated(categoryCode, page = 1, pageSize = 12) {
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  const { data, error, count } = await supabase
+    .from("posts")
+    .select("slug, title, published_at, categories!inner(name, code)", { count: "exact" })
+    .eq("status", "published")
+    .eq("categories.code", categoryCode)
+    .order("published_at", { ascending: false })
+    .range(from, to);
+
+  if (error) {
+    console.error(error);
+    return { posts: [], total: 0 };
+  }
+  return { posts: data ?? [], total: count ?? 0 };
+}
+
 export async function fetchMyRole() {
   if (isPasswordRecoverySession()) return null;
   const { data: { user } } = await supabase.auth.getUser();
