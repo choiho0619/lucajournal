@@ -147,6 +147,24 @@ a:hover{color:var(--color-accent);text-decoration:underline;}
 /* — post detail article container: centered, capped width — */
 .post-article{max-width:900px;margin:0 auto;padding:56px 0 64px;}
 
+/* — adjacent posts (prev/next within same category) — */
+.adjacent-posts{max-width:900px;margin:0 auto;padding:0 0 56px;
+  display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.adjacent-posts-link{box-sizing:border-box;min-width:0;min-height:44px;
+  display:flex;flex-direction:column;justify-content:center;gap:4px;
+  padding:14px 18px;border:1px solid var(--color-divider);border-radius:var(--radius-md);}
+.adjacent-posts-link:hover{border-color:var(--color-accent-700);text-decoration:none;}
+.adjacent-posts-link.is-prev{grid-column:1;}
+.adjacent-posts-link.is-next{grid-column:2;text-align:right;}
+.adjacent-posts-label{font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--color-accent-700);font-weight:600;}
+.adjacent-posts-title{font-size:15px;color:var(--color-text);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+@media (max-width:640px){
+  .adjacent-posts{grid-template-columns:1fr;}
+  .adjacent-posts-link.is-next{grid-column:1;text-align:left;}
+}
+
 /* — comments — */
 .comments-section{max-width:900px;margin:0 auto;padding:0 0 64px;}
 .comments-heading{font-size:20px;font-weight:600;margin:0 0 24px;}
@@ -241,6 +259,8 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
       <p style="margin-top:40px;" id="back-to-list-para" hidden><a href="/" class="btn btn-secondary" id="back-to-list">목록으로</a></p>
     </article>
 
+    <nav class="adjacent-posts" id="adjacent-posts-nav" aria-label="이전글 다음글" hidden></nav>
+
     <section class="comments-section" id="comments-section" hidden>
       <hr class="rule" style="margin:0 0 40px;">
       <h2 class="comments-heading">댓글 <span id="comments-count">0</span></h2>
@@ -265,7 +285,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 <script type="module" src="./auth-ui.js"></script>
 <script type="module">
   import { supabase, isAuthenticatedSession } from "./auth.js";
-  import { fetchPostBySlug, formatDate, fetchMyRole, deletePost } from "./posts.js?v=20260821";
+  import { fetchPostBySlug, formatDate, fetchMyRole, deletePost, fetchAdjacentPosts } from "./posts.js?v=20260822";
 
   function renderNotFound(container) {
     container.innerHTML = "";
@@ -344,6 +364,40 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
       body.appendChild(p);
     }
     container.appendChild(body);
+  }
+
+  function buildAdjacentLink(item, label, sideClass) {
+    const a = document.createElement("a");
+    a.className = `adjacent-posts-link ${sideClass}`;
+    a.href = `/post?slug=${encodeURIComponent(item.slug)}`;
+
+    const labelEl = document.createElement("span");
+    labelEl.className = "adjacent-posts-label";
+    labelEl.textContent = label;
+
+    const titleEl = document.createElement("span");
+    titleEl.className = "adjacent-posts-title";
+    titleEl.textContent = item.title;
+
+    a.appendChild(labelEl);
+    a.appendChild(titleEl);
+    return a;
+  }
+
+  // 본문 렌더링과는 별도 경로: 여기서 조회가 실패해도 이미 표시된 본문·댓글에는 영향을 주지 않는다.
+  // fetchAdjacentPosts는 항상 { prev, next } 형태로만 응답하도록 posts.js에서 보장한다.
+  async function renderAdjacentPosts(post) {
+    const nav = document.getElementById("adjacent-posts-nav");
+    const categoryCode = post.categories?.code;
+    if (!nav || !categoryCode) return;
+
+    const { prev, next } = await fetchAdjacentPosts(categoryCode, post.published_at);
+    if (!prev && !next) return;
+
+    nav.innerHTML = "";
+    if (prev) nav.appendChild(buildAdjacentLink(prev, "이전글", "is-prev"));
+    if (next) nav.appendChild(buildAdjacentLink(next, "다음글", "is-next"));
+    nav.hidden = false;
   }
 
   function formatCommentDate(dateStr) {
@@ -797,6 +851,10 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     }
 
     renderPost(container, post);
+
+    renderAdjacentPosts(post).catch((err) => {
+      console.error("[인접글 조회 실패]", err);
+    });
 
     const backToList = document.getElementById("back-to-list");
     if (post.categories?.code) {

@@ -130,6 +130,45 @@ export async function fetchPostsByCategory(categoryCode, limit = 20) {
   return data ?? [];
 }
 
+// prev: 기준 published_at보다 과거인 글 중 가장 최신 1건. next: 기준 published_at보다 미래인 글 중 가장 과거 1건.
+// .single() 대신 .limit(1)을 쓰는 이유: 대상이 0건이어도 에러가 아니라 빈 배열로 응답해야 하기 때문.
+export async function fetchAdjacentPosts(categoryCode, publishedAt) {
+  try {
+    const [prevResult, nextResult] = await Promise.all([
+      supabase
+        .from("posts")
+        .select("slug, title, categories!inner(code)")
+        .eq("status", "published")
+        .eq("categories.code", categoryCode)
+        .lt("published_at", publishedAt)
+        .order("published_at", { ascending: false })
+        .limit(1),
+      supabase
+        .from("posts")
+        .select("slug, title, categories!inner(code)")
+        .eq("status", "published")
+        .eq("categories.code", categoryCode)
+        .gt("published_at", publishedAt)
+        .order("published_at", { ascending: true })
+        .limit(1),
+    ]);
+
+    if (prevResult.error) console.error(prevResult.error);
+    if (nextResult.error) console.error(nextResult.error);
+
+    const prevRow = prevResult.data?.[0];
+    const nextRow = nextResult.data?.[0];
+
+    return {
+      prev: prevRow ? { slug: prevRow.slug, title: prevRow.title } : null,
+      next: nextRow ? { slug: nextRow.slug, title: nextRow.title } : null,
+    };
+  } catch (err) {
+    console.error(err);
+    return { prev: null, next: null };
+  }
+}
+
 export async function fetchPostsByCategoryPaginated(categoryCode, page = 1, pageSize = 12) {
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
