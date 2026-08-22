@@ -143,6 +143,57 @@ function injectMetadata(html, post, canonicalUrl) {
   return result.replace("</head>", `${jsonLdTag}\n</head>`);
 }
 
+// posts.content는 HTML이 아닌 순수 텍스트로 저장된다 (문단 구분: 빈 줄, 문단 내 줄바꿈: 단일 개행).
+// 실제 저장된 값을 REST로 직접 확인해 검증했다 — post.html의 클라이언트 렌더링(renderPost)과 동일한
+// 분해 규칙을 그대로 따른다: \n{2,}으로 문단을 나누고, 문단 내부의 단일 \n은 <br>로 치환한다.
+function buildParagraphsHtml(content) {
+  const paragraphs = String(content ?? "")
+    .split(/\n{2,}/)
+    .filter((para) => para.trim() !== "");
+
+  return paragraphs
+    .map((para) => para.split("\n").map((line) => escapeHtml(line)).join("<br>"))
+    .map((para) => `<p>${para}</p>`)
+    .join("");
+}
+
+// Cloudflare Workers 런타임은 로컬 타임존이 없어 Date의 getFullYear 등이 항상 UTC 기준으로 동작한다.
+// 사이트 사용자는 한국(KST, UTC+9) 기준으로 날짜를 보므로, 여기서만 명시적으로 9시간을 더해 맞춘다.
+function formatDateKST(dateStr) {
+  const kst = new Date(new Date(dateStr).getTime() + 9 * 60 * 60 * 1000);
+  const yyyy = kst.getUTCFullYear();
+  const mm = String(kst.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(kst.getUTCDate()).padStart(2, "0");
+  return `${yyyy}.${mm}.${dd}`;
+}
+
+function buildPostBodyHtml(post) {
+  const title = String(post.title ?? "").trim();
+  const categoryLabel = post.categories?.code || post.categories?.name || "";
+  const author = String(post.profiles?.display_name ?? "").trim();
+  const date = formatDateKST(post.published_at);
+  const metaText = author ? `${author} · ${date}` : date;
+
+  const parts = [];
+  if (categoryLabel) {
+    parts.push(`<span class="eyebrow">${escapeHtml(categoryLabel)}</span>`);
+  }
+  parts.push(`<h1 class="headline" style="font-size:clamp(28px,3.2vw,40px)">${escapeHtml(title)}</h1>`);
+  parts.push(`<p class="sub">${escapeHtml(metaText)}</p>`);
+  parts.push(`<div class="post-body" style="margin-top:32px">${buildParagraphsHtml(post.content)}</div>`);
+  return parts.join("");
+}
+
+// 정적 스켈레톤(#post-content 내부)을 서버에서 실제 본문 HTML로 통째로 교체한다.
+// 클라이언트의 renderPost()도 container.innerHTML = ""로 컨테이너 전체를 지운 뒤 다시 그리므로,
+// 여기서 부분 삽입이 아니라 컨테이너 전체를 교체해 두면 클라이언트가 하이드레이션할 때도
+// 이 서버 렌더 결과가 그대로 지워지고 동일한 내용으로 다시 채워져 중복 표시가 발생하지 않는다.
+function injectPostBody(html, post) {
+  const pattern = /<div id="post-content">[\s\S]*?<\/div>(\s*<p style="margin-top:40px;" id="back-to-list-para")/;
+  if (!pattern.test(html)) return html;
+  return html.replace(pattern, `<div id="post-content">${buildPostBodyHtml(post)}</div>$1`);
+}
+
 async function fetchStaticPost(request, env) {
   const assetUrl = new URL(request.url);
   assetUrl.pathname = "/post";
@@ -191,7 +242,8 @@ export async function onRequestGet({ request, env }) {
     }
 
     const canonicalUrl = `${SITE_URL}/post?slug=${encodeURIComponent(slug)}`;
-    const html = injectMetadata(await staticResponse.clone().text(), post, canonicalUrl);
+    let html = injectMetadata(await staticResponse.clone().text(), post, canonicalUrl);
+    html = injectPostBody(html, post);
     const headers = new Headers(staticResponse.headers);
     headers.set("content-type", "text/html; charset=UTF-8");
     headers.delete("content-length");
