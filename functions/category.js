@@ -4,6 +4,7 @@ const VALID_CATEGORY_CODES = new Set([
   "PERSPECTIVE",
   "HERITAGE",
   "APOLOGETICS",
+  "CHRISTIANITY",
   "CULTURE",
   "NOTICE",
 ]);
