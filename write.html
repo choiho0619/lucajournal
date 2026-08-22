@@ -199,7 +199,12 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
         </div>
         <div class="field">
           <label for="post-content">본문</label>
+          <div class="form-actions" style="margin:0 0 8px;">
+            <button type="button" id="image-insert-btn" class="btn btn-secondary">이미지 삽입</button>
+          </div>
+          <input id="post-image-file" type="file" accept="image/jpeg,image/png,image/webp" hidden />
           <textarea id="post-content" required></textarea>
+          <p id="image-message" class="form-message" hidden></p>
         </div>
         <div class="field">
           <label for="post-audio">오디오 (MP3, 선택)</label>
@@ -253,7 +258,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 <script type="module" src="./auth-ui.js"></script>
 <script type="module">
   import { supabase, signInWithGoogle, redirectPasswordRecoveryToReset } from "./auth.js";
-  import { fetchMyRole, fetchActiveCategories, createPost, fetchPostById, updatePost, uploadPostAudio, deletePostAudio } from "./posts.js?v=20260822";
+  import { fetchMyRole, fetchActiveCategories, createPost, fetchPostById, updatePost, uploadPostAudio, deletePostAudio, validatePostImageFile, uploadPostImage, deletePostImage, deletePostImages, extractPendingImageTokens, replacePendingImageTokens, containsPendingImageToken, extractValidImageObjectPaths } from "./posts.js?v=20260823";
 
   const gateLogin = document.getElementById("gate-login");
   const gateNoPermission = document.getElementById("gate-no-permission");
@@ -278,6 +283,13 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
   let existingAudioArtist = null;
   let selectedAudioFile = null; // 선택만 되고 아직 업로드되지 않은 새 MP3. 저장 버튼을 눌렀을 때 업로드된다.
   let isSaving = false;
+  // pendingId -> File. 파일 선택 즉시 Storage에 올리지 않는다 — 오디오와 동일하게 저장 버튼을
+  // 눌렀을 때만 업로드한다. 저장하지 않고 벗어나면(취소/새로고침) 이 Map이 그냥 사라질 뿐이라
+  // Storage에는 애초에 아무것도 올라가지 않으므로 고아 파일이 생기지 않는다.
+  const pendingImages = new Map();
+  // 수정 화면 진입 시 로드된 원본 content의 확정 이미지 path 집합(Stage 4). 신규 글은 빈 Set —
+  // 저장 성공 후 이 집합에서 사라진 path만 "제거된 기존 이미지"로 판단해 Storage에서 정리한다.
+  let originalImagePaths = new Set();
 
   document.getElementById("gate-login-btn").addEventListener("click", () => signInWithGoogle());
 
@@ -302,6 +314,17 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     }
   }
 
+  // 이번 저장 시도에서 새로 Storage에 올라간 이미지만 best-effort로 삭제한다. 기존 글에
+  // 이미 존재하던 이미지·과거에 저장된 이미지는 이 함수에 절대 전달하지 않는다(호출부 책임).
+  async function cleanupNewlyUploadedImages(paths, reason) {
+    for (const path of paths) {
+      const cleanup = await deletePostImage(path);
+      if (cleanup.error) {
+        console.error(`[이미지 정리 실패] ${reason} 후 삭제 실패(${path}):`, cleanup.error);
+      }
+    }
+  }
+
   async function submit(status) {
     if (isSaving) return;
     isSaving = true;
@@ -309,8 +332,70 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     saveDraftBtn.disabled = true;
     publishBtn.disabled = true;
 
-    // 저장 시작 시점의 값을 즉시 지역 변수로 캡처한다. 업로드는 비동기(await)로 진행되므로,
-    // 이후 시점의 DOM 상태가 아니라 저장 버튼을 누른 순간의 값을 그대로 사용해야 한다.
+    function resetSavingState() {
+      saveDraftBtn.disabled = false;
+      publishBtn.disabled = false;
+      isSaving = false;
+    }
+
+    // 저장 버튼을 누른 시점의 본문 스냅샷을 기준으로 pending 이미지를 처리한다(오디오와 동일하게
+    // 비동기 업로드 중 DOM 상태가 바뀌어도 이 시점 값을 그대로 쓴다).
+    const initialContent = contentTextarea.value;
+    const pendingTokens = extractPendingImageTokens(initialContent);
+
+    // malformed pendingId(=UUID 형식이 아님)가 하나라도 있으면 업로드 시도 자체를 하지 않는다.
+    if (pendingTokens.some((token) => !token.valid)) {
+      showMessage("본문에 잘못된 이미지 참조가 있습니다. 이미지를 다시 삽입해 주세요.", true);
+      resetSavingState();
+      return;
+    }
+
+    // 현재 본문에 남아 있는 pendingId 중 pendingImages Map에 실제 File이 없는 것(=고아 pending —
+    // 새로고침으로 File이 사라졌거나 pendingId를 직접 입력한 경우)이 있으면 Storage/DB 어느 쪽도
+    // 건드리지 않고 중단한다.
+    const uniquePendingIds = [...new Set(pendingTokens.map((token) => token.pendingId))];
+    if (uniquePendingIds.some((pendingId) => !pendingImages.has(pendingId))) {
+      showMessage("본문의 이미지가 새로고침 등으로 유실됐습니다. 이미지를 다시 삽입한 뒤 저장해 주세요.", true);
+      resetSavingState();
+      return;
+    }
+
+    // 현재 본문에 실제로 등장하는 pendingId만 업로드한다(Map에만 있고 본문에서 지워진 pendingId는
+    // 업로드하지 않는다). 동일 pendingId가 여러 번 등장해도 업로드는 1회만 한다.
+    const pendingIdToObjectPath = new Map();
+    const newlyUploadedImagePaths = []; // 이번 시도에서 실제로 Storage에 올라간 것만 — 실패 시 보상 삭제 대상
+
+    if (uniquePendingIds.length > 0) {
+      showMessage("이미지 업로드 중…", false);
+      for (const pendingId of uniquePendingIds) {
+        const uploadResult = await uploadPostImage(pendingImages.get(pendingId));
+        if (uploadResult.error) {
+          await cleanupNewlyUploadedImages(newlyUploadedImagePaths, "부분 업로드 실패");
+          showMessage(`이미지 업로드에 실패했습니다: ${uploadResult.error}`, true);
+          resetSavingState();
+          return;
+        }
+        pendingIdToObjectPath.set(pendingId, uploadResult.data.path);
+        newlyUploadedImagePaths.push(uploadResult.data.path);
+      }
+    }
+
+    const contentWithConfirmedImages = replacePendingImageTokens(initialContent, pendingIdToObjectPath);
+
+    // 저장 직전 최종 방어: parser 결과만 믿지 않고 치환 후 문자열 자체에 "pending:" 흔적이
+    // 남아 있는지 다시 검사한다. 하나라도 남으면 DB에는 절대 저장하지 않는다.
+    if (containsPendingImageToken(contentWithConfirmedImages)) {
+      await cleanupNewlyUploadedImages(newlyUploadedImagePaths, "pending 잔존으로 저장 중단");
+      showMessage("이미지 처리 중 문제가 발생했습니다. 다시 시도해 주세요.", true);
+      resetSavingState();
+      return;
+    }
+
+    // 이번 저장으로 확정될 이미지 집합(Stage 4). DB 저장이 실제로 성공한 뒤에만 originalImagePaths와
+    // 비교해 "제거된 기존 이미지"를 계산한다 — 저장 성공 전에는 기존 Storage 자산을 절대 건드리지 않는다.
+    const finalImagePaths = extractValidImageObjectPaths(contentWithConfirmedImages);
+
+    // 기존 오디오 업로드 흐름(변경 없음). 저장 버튼을 누른 시점의 값을 즉시 지역 변수로 캡처한다.
     const fileToUpload = selectedAudioFile;
     const capturedAudioTitle = audioTitleInput.value.trim();
     const capturedAudioArtist = audioArtistInput.value.trim();
@@ -325,10 +410,10 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
       showMessage("오디오 업로드 중…", false);
       const uploadResult = await uploadPostAudio(fileToUpload);
       if (uploadResult.error) {
+        // 오디오 업로드가 실패해 저장이 중단되므로, 이번 시도에서 이미 올라간 이미지도 함께 정리한다.
+        await cleanupNewlyUploadedImages(newlyUploadedImagePaths, "오디오 업로드 실패로 저장 중단");
         showMessage("오디오 업로드에 실패했습니다. 다시 시도해 주세요.", true);
-        saveDraftBtn.disabled = false;
-        publishBtn.disabled = false;
-        isSaving = false;
+        resetSavingState();
         return;
       }
       resolvedAudioUrl = uploadResult.data.publicUrl;
@@ -343,7 +428,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
           id: editId,
           categoryId: categorySelect.value,
           title: titleInput.value,
-          content: contentTextarea.value,
+          content: contentWithConfirmedImages,
           audioUrl: resolvedAudioUrl,
           audioTitle: resolvedAudioTitle,
           audioArtist: resolvedAudioArtist,
@@ -352,7 +437,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
       : await createPost({
           categoryId: categorySelect.value,
           title: titleInput.value,
-          content: contentTextarea.value,
+          content: contentWithConfirmedImages,
           status,
           audioUrl: resolvedAudioUrl,
           audioTitle: resolvedAudioTitle,
@@ -360,9 +445,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
           audioKind: capturedAudioKind,
         });
 
-    saveDraftBtn.disabled = false;
-    publishBtn.disabled = false;
-    isSaving = false;
+    resetSavingState();
 
     if (result.error) {
       // 방금 새 MP3를 업로드했는데 DB 저장이 실패한 경우, 고아로 남는 새 파일을 정리한다.
@@ -373,6 +456,8 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
           console.error("[오디오 정리 실패] 저장 실패 후 새 파일 삭제 실패:", cleanup.error);
         }
       }
+      // 이번 시도에서 새로 올린 이미지도 함께 정리한다(기존 이미지는 절대 건드리지 않는다).
+      await cleanupNewlyUploadedImages(newlyUploadedImagePaths, "DB 저장 실패");
       showMessage(result.error, true);
       return;
     }
@@ -386,6 +471,11 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
         ? existingAudioUrl
         : null;
 
+    // DB 저장이 이미 성공한 지금 시점에만 originalImagePaths(원본)와 finalImagePaths(이번 저장 결과)를
+    // 비교한다. Set 기준 차집합이므로 동일 path가 본문 다른 위치에 남아 있으면 삭제 대상에서 빠진다.
+    // 신규 글은 originalImagePaths가 빈 Set이라 항상 빈 배열이 된다.
+    const removedImagePaths = [...originalImagePaths].filter((path) => !finalImagePaths.has(path));
+
     selectedAudioFile = null;
     audioUrl = resolvedAudioUrl;
     audioTitle = resolvedAudioTitle;
@@ -395,11 +485,31 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     existingAudioArtist = resolvedAudioArtist ?? null;
     updateAudioUI();
 
+    // 이번 저장으로 pendingImages는 전부 소비됐다(성공한 이미지는 이미 확정 토큰으로 치환됨).
+    // 저장 버튼을 누른 뒤 사용자가 본문을 추가로 편집하지 않았을 때만 화면을 확정 토큰 상태로
+    // 동기화한다 — 업로드 대기 중 입력한 내용을 덮어쓰지 않기 위함이다(이 페이지에 남는 경우는
+    // "새 글 임시저장"뿐이며, 발행/수정 저장은 곧바로 다른 페이지로 이동한다).
+    pendingImages.clear();
+    if (contentTextarea.value === initialContent) {
+      contentTextarea.value = contentWithConfirmedImages;
+    }
+
     if (oldAudioUrlToCleanup) {
       const cleanup = await deletePostAudio(oldAudioUrlToCleanup);
       if (cleanup.error) {
         console.error("[오디오 정리 실패] 이전 오디오 파일 삭제 실패:", cleanup.error);
         alert("게시글은 저장되었지만 이전 오디오 파일 정리에 실패했습니다. 관리자에게 문의해주세요.");
+      }
+    }
+
+    // 제거된 기존 이미지 정리(Stage 4). DB 저장은 이미 성공했으므로 이 삭제가 실패해도 게시글 저장
+    // 자체는 되돌리지 않는다 — 새 게시글 상태가 이미 해당 이미지를 참조하지 않으므로 Storage에
+    // 남는 파일은 orphan일 뿐 본문 깨짐을 만들지 않는다(오디오와 동일한 정책).
+    if (removedImagePaths.length > 0) {
+      const cleanup = await deletePostImages(removedImagePaths);
+      if (cleanup.failures.length > 0) {
+        console.error("[이미지 정리 실패] 제거된 기존 이미지 삭제 실패:", cleanup.failures);
+        alert("게시글은 저장되었지만 일부 이미지 파일 정리에 실패했습니다. 관리자에게 문의해주세요.");
       }
     }
 
@@ -436,6 +546,10 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     titleInput.value = post.title;
     contentTextarea.value = post.content;
     categorySelect.value = String(post.category_id);
+
+    // 원본 content의 확정 이미지 path 집합을 확보한다(Stage 2 parser 재사용). 기존 token은
+    // pendingImages에 넣지 않는다 — 새로 삽입한 이미지만 pendingImages로 관리한다.
+    originalImagePaths = extractValidImageObjectPaths(post.content);
 
     eyebrowEl.textContent = "글 수정";
     headingEl.textContent = "글 수정";
@@ -577,6 +691,71 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 
   audioArtistInput.addEventListener("input", () => {
     audioArtist = audioArtistInput.value.trim() || null;
+  });
+
+  const imageInsertBtn = document.getElementById("image-insert-btn");
+  const imageFileInput = document.getElementById("post-image-file");
+  const imageMessage = document.getElementById("image-message");
+
+  function showImageMessage(text, isError) {
+    imageMessage.textContent = text;
+    imageMessage.style.color = isError ? "#b3261e" : "";
+    imageMessage.hidden = false;
+  }
+
+  // crypto.randomUUID()는 Secure Context(HTTPS 또는 localhost)에서만 제공된다. HTTP IP 기반 개발
+  // 주소(예: http://100.115.89.75:8788/)에서는 randomUUID가 존재하지 않아 예외가 발생하므로,
+  // 그 경우에만 crypto.getRandomValues() 기반 UUID v4로 대체한다. getRandomValues()는 Secure
+  // Context 여부와 무관하게 항상 제공되며, Math.random()은 예측 가능해 사용하지 않는다.
+  function generatePendingImageId() {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40; // version 4
+    bytes[8] = (bytes[8] & 0x3f) | 0x80; // variant 10xx
+    const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  }
+
+  // 현재 선택 영역(있다면)은 지우거나 caption으로 바꾸지 않고 그대로 둔 채, 선택 영역 바로 뒤에
+  // 독립 블록(앞뒤로 빈 줄)이 되도록 pending 토큰을 삽입한다. 커서는 "|" 바로 뒤(캡션 입력 위치)에 둔다.
+  function insertPendingImageToken(pendingId) {
+    const token = `[[image:pending:${pendingId}|]]`;
+    const insertAt = contentTextarea.selectionEnd;
+    const value = contentTextarea.value;
+    const before = value.slice(0, insertAt);
+    const after = value.slice(insertAt);
+
+    const prefix = before.length === 0 || /\n\n$/.test(before) ? "" : before.endsWith("\n") ? "\n" : "\n\n";
+    const suffix = after.length === 0 || /^\n\n/.test(after) ? "" : after.startsWith("\n") ? "\n" : "\n\n";
+
+    contentTextarea.value = before + prefix + token + suffix + after;
+
+    const cursorPos = before.length + prefix.length + token.length - 2; // "|" 바로 뒤, "]]" 앞
+    contentTextarea.focus();
+    contentTextarea.setSelectionRange(cursorPos, cursorPos);
+  }
+
+  imageInsertBtn.addEventListener("click", () => imageFileInput.click());
+
+  // Storage 업로드는 여기서 하지 않는다 — validatePostImageFile 통과 시 File을 pendingImages에만
+  // 보관하고 pending 토큰을 커서 위치에 삽입한다. 실제 업로드는 저장 버튼을 눌렀을 때 submit()이 처리한다.
+  imageFileInput.addEventListener("change", () => {
+    const file = imageFileInput.files && imageFileInput.files[0];
+    imageFileInput.value = ""; // 같은 파일을 연달아 선택해도 change 이벤트가 다시 발생하도록 초기화
+    if (!file) return;
+
+    const validation = validatePostImageFile(file);
+    if (validation.error) {
+      showImageMessage(validation.error, true);
+      return;
+    }
+
+    const pendingId = generatePendingImageId();
+    pendingImages.set(pendingId, file);
+    insertPendingImageToken(pendingId);
+    showImageMessage(`이미지가 삽입되었습니다: ${file.name} (저장 시 업로드됩니다)`, false);
   });
 
   document.getElementById("save-draft-btn").addEventListener("click", () => submit("draft"));

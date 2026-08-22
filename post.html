@@ -143,6 +143,10 @@ a:hover{color:var(--color-accent);text-decoration:underline;}
 @media (min-width: 641px){
   .post-body p{text-align:justify;}
 }
+.post-image-figure{margin:24px 0;}
+.post-image{height:auto;border-radius:var(--radius-md);}
+.post-image-caption{margin-top:8px;font-size:13.5px;line-height:1.6;text-align:center;
+  color:color-mix(in srgb, var(--color-text) 60%, transparent);}
 
 /* — post detail article container: centered, capped width — */
 .post-article{max-width:900px;margin:0 auto;padding:56px 0 64px;}
@@ -286,7 +290,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
 <script type="module" src="./auth-ui.js"></script>
 <script type="module">
   import { supabase, isAuthenticatedSession } from "./auth.js";
-  import { fetchPostBySlug, formatDate, fetchMyRole, deletePost, fetchAdjacentPosts } from "./posts.js?v=20260822";
+  import { fetchPostBySlug, formatDate, fetchMyRole, deletePost, fetchAdjacentPosts, parseImageBlockParagraph, getPostImagePublicUrl } from "./posts.js?v=20260823";
 
   function renderNotFound(container) {
     container.innerHTML = "";
@@ -356,6 +360,11 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
     body.style.marginTop = "32px";
     const paragraphs = (post.content || "").split(/\n{2,}/).filter((para) => para.trim() !== "");
     for (const para of paragraphs) {
+      const imageBlock = parseImageBlockParagraph(para);
+      if (imageBlock) {
+        body.appendChild(buildImageFigure(imageBlock));
+        continue;
+      }
       const p = document.createElement("p");
       const paraLines = para.split("\n");
       paraLines.forEach((paraLine, i) => {
@@ -365,6 +374,33 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
       body.appendChild(p);
     }
     container.appendChild(body);
+  }
+
+  // path는 parseImageBlockParagraph가 이미 validatePostImageObjectPath로 검증을 마친 뒤 넘어오므로
+  // getPostImagePublicUrl은 여기서 실패하지 않는다. innerHTML을 쓰지 않고 요소를 직접 생성하며,
+  // caption은 textContent/alt 프로퍼티 대입만 사용해 HTML 파서를 거치지 않는다(기존 XSS 방어 원칙 유지).
+  function buildImageFigure({ path, caption }) {
+    const { data } = getPostImagePublicUrl(path);
+
+    const figure = document.createElement("figure");
+    figure.className = "post-image-figure";
+
+    const img = document.createElement("img");
+    img.className = "post-image";
+    img.src = data.publicUrl;
+    img.alt = caption || "";
+    img.loading = "lazy";
+    img.decoding = "async";
+    figure.appendChild(img);
+
+    if (caption) {
+      const figcaption = document.createElement("figcaption");
+      figcaption.className = "post-image-caption";
+      figcaption.textContent = caption;
+      figure.appendChild(figcaption);
+    }
+
+    return figure;
   }
 
   function buildAdjacentLink(item, label, sideClass) {
@@ -883,7 +919,7 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
         if (!confirm("이 글을 삭제하시겠습니까? 되돌릴 수 없습니다.")) return;
 
         deleteBtn.disabled = true;
-        const result = await deletePost(post.id, post.audio_url);
+        const result = await deletePost(post.id, post.audio_url, post.content);
 
         if (result.error) {
           alert(result.error || "게시글 삭제 중 오류가 발생했습니다");
@@ -894,6 +930,11 @@ footer.site-footer{padding:36px clamp(20px,5vw,64px);font-size:13px;
         if (result.cleanupError) {
           console.error("[Storage 정리 실패] 게시글은 삭제되었지만 오디오 파일 정리에 실패했습니다:", result.cleanupError);
           alert("게시글은 삭제되었지만 오디오 파일 정리에 실패했습니다. 관리자에게 문의해주세요.");
+        }
+
+        if (result.imageCleanupError) {
+          console.error("[Storage 정리 실패] 게시글은 삭제되었지만 이미지 파일 정리에 실패했습니다:", result.imageCleanupError);
+          alert("게시글은 삭제되었지만 이미지 파일 정리에 실패했습니다. 관리자에게 문의해주세요.");
         }
 
         window.location.href = backToList.href;

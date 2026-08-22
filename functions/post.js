@@ -47,8 +47,52 @@ function decodeHtmlEntities(value) {
   );
 }
 
+// posts.js의 IMAGE_OBJECT_PATH_PATTERN/validatePostImageObjectPath/parseImageBlockParagraph와 동일한 규칙이다.
+// functions/post.js는 Cloudflare Pages Functions 런타임에서 esm.sh 원격 import(posts.js → auth.js)를
+// 피하는 기존 설계를 따르고 있어(§4.9, buildParagraphsHtml의 문단/줄바꿈 분해 규칙도 이미 이렇게
+// 별도 구현으로 중복 유지 중) posts.js를 import할 수 없다 — 그래서 이 검증 로직도 부득이하게 중복 구현한다.
+const IMAGE_BUCKET_NAME = "images";
+const IMAGE_OBJECT_PATH_PATTERN =
+  /^posts\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-[A-Za-z0-9_-]+\.(jpg|png|webp)$/i;
+
+function isValidImageObjectPath(objectPath) {
+  if (typeof objectPath !== "string" || objectPath.length === 0) return false;
+  if (objectPath.includes("..") || objectPath.includes("\\") || objectPath.startsWith("/") || objectPath.includes("//")) {
+    return false;
+  }
+  return IMAGE_OBJECT_PATH_PATTERN.test(objectPath);
+}
+
+// 미리보기(meta description)용 토큰 제거 — path 유효성과 무관하게 "[[image:...]]" 형태 전체를 지운다.
+const IMAGE_TOKEN_STRIP_PATTERN = /\[\[image:[^|\]]+(?:\|[^\]]*)?\]\]/g;
+
+// 문단(줄바꿈 2개 이상으로 분리된 블록) 하나가 이미지 토큰 하나로만 이루어져 있을 때만 값을 반환한다.
+// post.html renderPost()의 parseImageBlockParagraph()와 동일한 "토큰 한 줄 = 독립 블록" 규칙.
+const IMAGE_BLOCK_ONLY_PATTERN = /^\[\[image:([^|\]]+)(?:\|([^\]]*))?\]\]$/;
+
+function parseImageBlockParagraph(paragraph) {
+  const trimmed = String(paragraph ?? "").trim();
+  const match = IMAGE_BLOCK_ONLY_PATTERN.exec(trimmed);
+  if (!match) return null;
+
+  const [, rawPath, rawCaption] = match;
+  if (!isValidImageObjectPath(rawPath)) return null;
+
+  return { path: rawPath, caption: rawCaption ? rawCaption.trim() : "" };
+}
+
+function buildImageFigureHtml(imageBlock, supabaseUrl) {
+  const publicUrl = `${supabaseUrl}/storage/v1/object/public/${IMAGE_BUCKET_NAME}/${imageBlock.path}`;
+  const altText = escapeHtml(imageBlock.caption || "");
+  const figcaptionHtml = imageBlock.caption
+    ? `<figcaption class="post-image-caption">${escapeHtml(imageBlock.caption)}</figcaption>`
+    : "";
+  return `<figure class="post-image-figure"><img class="post-image" src="${escapeHtml(publicUrl)}" alt="${altText}" loading="lazy" decoding="async">${figcaptionHtml}</figure>`;
+}
+
 function createDescription(content) {
-  const plainText = decodeHtmlEntities(String(content ?? "").replace(/<[^>]*>/g, " "))
+  const withoutImageTokens = String(content ?? "").replace(IMAGE_TOKEN_STRIP_PATTERN, " ");
+  const plainText = decodeHtmlEntities(withoutImageTokens.replace(/<[^>]*>/g, " "))
     .replace(/\s+/g, " ")
     .trim();
 
@@ -146,14 +190,22 @@ function injectMetadata(html, post, canonicalUrl) {
 // posts.content는 HTML이 아닌 순수 텍스트로 저장된다 (문단 구분: 빈 줄, 문단 내 줄바꿈: 단일 개행).
 // 실제 저장된 값을 REST로 직접 확인해 검증했다 — post.html의 클라이언트 렌더링(renderPost)과 동일한
 // 분해 규칙을 그대로 따른다: \n{2,}으로 문단을 나누고, 문단 내부의 단일 \n은 <br>로 치환한다.
-function buildParagraphsHtml(content) {
+// 문단이 이미지 토큰 하나로만 이루어진 독립 블록이면 figure/img/figcaption을 생성하고,
+// 그 외에는 기존 <p>+<br> 규칙을 그대로 적용한다(post.html renderPost()와 동일한 판정 순서).
+function buildParagraphsHtml(content, supabaseUrl) {
   const paragraphs = String(content ?? "")
     .split(/\n{2,}/)
     .filter((para) => para.trim() !== "");
 
   return paragraphs
-    .map((para) => para.split("\n").map((line) => escapeHtml(line)).join("<br>"))
-    .map((para) => `<p>${para}</p>`)
+    .map((para) => {
+      const imageBlock = parseImageBlockParagraph(para);
+      if (imageBlock) {
+        return buildImageFigureHtml(imageBlock, supabaseUrl);
+      }
+      const escapedLines = para.split("\n").map((line) => escapeHtml(line)).join("<br>");
+      return `<p>${escapedLines}</p>`;
+    })
     .join("");
 }
 
@@ -167,7 +219,7 @@ function formatDateKST(dateStr) {
   return `${yyyy}.${mm}.${dd}`;
 }
 
-function buildPostBodyHtml(post) {
+function buildPostBodyHtml(post, supabaseUrl) {
   const title = String(post.title ?? "").trim();
   const categoryLabel = post.categories?.code || post.categories?.name || "";
   const author = String(post.profiles?.display_name ?? "").trim();
@@ -180,7 +232,7 @@ function buildPostBodyHtml(post) {
   }
   parts.push(`<h1 class="headline" style="font-size:clamp(28px,3.2vw,40px)">${escapeHtml(title)}</h1>`);
   parts.push(`<p class="sub">${escapeHtml(metaText)}</p>`);
-  parts.push(`<div class="post-body" style="margin-top:32px">${buildParagraphsHtml(post.content)}</div>`);
+  parts.push(`<div class="post-body" style="margin-top:32px">${buildParagraphsHtml(post.content, supabaseUrl)}</div>`);
   return parts.join("");
 }
 
@@ -188,10 +240,10 @@ function buildPostBodyHtml(post) {
 // 클라이언트의 renderPost()도 container.innerHTML = ""로 컨테이너 전체를 지운 뒤 다시 그리므로,
 // 여기서 부분 삽입이 아니라 컨테이너 전체를 교체해 두면 클라이언트가 하이드레이션할 때도
 // 이 서버 렌더 결과가 그대로 지워지고 동일한 내용으로 다시 채워져 중복 표시가 발생하지 않는다.
-function injectPostBody(html, post) {
+function injectPostBody(html, post, supabaseUrl) {
   const pattern = /<div id="post-content">[\s\S]*?<\/div>(\s*<p style="margin-top:40px;" id="back-to-list-para")/;
   if (!pattern.test(html)) return html;
-  return html.replace(pattern, `<div id="post-content">${buildPostBodyHtml(post)}</div>$1`);
+  return html.replace(pattern, `<div id="post-content">${buildPostBodyHtml(post, supabaseUrl)}</div>$1`);
 }
 
 async function fetchStaticPost(request, env) {
@@ -243,7 +295,7 @@ export async function onRequestGet({ request, env }) {
 
     const canonicalUrl = `${SITE_URL}/post?slug=${encodeURIComponent(slug)}`;
     let html = injectMetadata(await staticResponse.clone().text(), post, canonicalUrl);
-    html = injectPostBody(html, post);
+    html = injectPostBody(html, post, env.SUPABASE_URL);
     const headers = new Headers(staticResponse.headers);
     headers.set("content-type", "text/html; charset=UTF-8");
     headers.delete("content-length");
